@@ -23,13 +23,13 @@ class PollardRhoFactorisor:
         y = x
         c = randint(1, self.number - 1)
         while (d == 1):
-            x = (PollardRhoFactorisor.modularExpo(self, x, 2, self.number) + c + self.number) % self.number
+            x = (self.modularExpo(self, x, 2, self.number) + c + self.number) % self.number
             
-            y = (PollardRhoFactorisor.modularExpo(self, y, 2, self.number) + c + self.number) % self.number
-            y = (PollardRhoFactorisor.modularExpo(self, y, 2, self.number) + c + self.number) % self.number
+            y = (self.modularExpo(self, y, 2, self.number) + c + self.number) % self.number
+            y = (self.modularExpo(self, y, 2, self.number) + c + self.number) % self.number
             
             d= gcd(abs(x - y), self.number)
             
             if (d == self.number):
-                return PollardRhoFactorisor.main(self)
+                return self.main(self)
         return d
