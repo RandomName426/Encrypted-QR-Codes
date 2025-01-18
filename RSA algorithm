@@ -1,12 +1,8 @@
-from PollardRhofactoriser import PollardRhoFactorisor
-factor = PollardRhoFactorisor
 message = input()
 dataArr = []
 for char in message:
     dataArr.append(str(ord(char)))
-
-
-
+    
 def RSAEncoding(plaintxt_arr, publickey):
     encryptedtxt_data = []
     for data in plaintxt_arr:
@@ -18,15 +14,11 @@ def RSADecoding(encryptedtxt_arr, privatekey):
     for data in encryptedtxt_arr:
         plaintxt_data.append(str((int(data) ** privatekey[0]) % privatekey[1]))
     return (" ".join(plaintxt_data))
-# publickey = (17,3233)
-# privatekey= (2753,3233)
-# x= RSAEncoding(dataArr,publickey)
-# y= RSADecoding(x.split(),privatekey)
+publickey = (17,3233)
+privatekey= (2753,3233)
+x= RSAEncoding(dataArr,publickey)
+y= RSADecoding(x.split(),privatekey)
 
-# print(" ".join(dataArr))
-# print(x)
-# print(y)
-y = 1587580087*9088391779
-
-z= factor(y)
-print(factor.main(z))
+print(" ".join(dataArr))
+print(x)
+print(y)
