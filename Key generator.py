@@ -1,3 +1,4 @@
+import MillerRobinPrimalityChecker
 from math import lcm
 class key_generator:
     def __init__(self, first_prime,second_prime):
@@ -33,7 +34,7 @@ class key_generator:
         public_key = (self.e,self.n)
         private_key = (d,self.n)
         return (private_key,public_key)        
-y = key_generator(2335211,8285509)
-sda,adf = key_generator.generate_key(y)
-print(sda)
-print(adf)
+prime_1,prime_2 = MillerRobinPrimalityChecker.main()
+y = key_generator(prime_1,prime_2)
+privateKey,publicKey = key_generator.generate_key(y)
+print(publicKey, "\n\n", privateKey)

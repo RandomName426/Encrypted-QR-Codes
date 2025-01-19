@@ -8,7 +8,7 @@ def trial_division(n):
             return False  # Found a divisor, not a prime
     return True
 
-def main(num):
+def MillerRobinPrimalityChecker(num):
     s,d = 0,(num-1)
     while d%2 == 1:
         d //= 2
@@ -27,3 +27,16 @@ def main(num):
         else:
             return False
     return True
+
+def main():
+    primesList = []
+    while len(primesList) < 2: 
+        candidate_for_prime = randbelow(2**3072)  
+        if candidate_for_prime % 2 == 0:
+            candidate_for_prime += 1
+        if trial_division(candidate_for_prime):
+            if MillerRobinPrimalityChecker(candidate_for_prime):
+                primesList.append(candidate_for_prime)  
+                
+    return primesList[0], primesList[1]
+
