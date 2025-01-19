@@ -33,8 +33,10 @@ class key_generator:
         d = self.modular_inverse(self.e,self.carmichael_lambda_function)
         public_key = (self.e,self.n)
         private_key = (d,self.n)
-        return (private_key,public_key)        
-prime_1,prime_2 = MillerRobinPrimalityChecker.main()
-y = key_generator(prime_1,prime_2)
-privateKey,publicKey = key_generator.generate_key(y)
-print(publicKey, "\n\n", privateKey)
+        return public_key,private_key        
+
+def main():
+    prime_1,prime_2 = MillerRobinPrimalityChecker.main()
+    y = key_generator(prime_1,prime_2)
+    return key_generator.generate_key(y)
+     

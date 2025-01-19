@@ -1,3 +1,5 @@
+import KeyGenerator
+
 message = input()
 dataArr = []
 for char in message:
@@ -6,19 +8,19 @@ for char in message:
 def RSAEncoding(plaintxt_arr, publickey):
     encryptedtxt_data = []
     for data in plaintxt_arr:
-        encryptedtxt_data.append(str((int(data) ** publickey[0]) % publickey[1]))
-    return (" ".join(encryptedtxt_data))
+        encryptedtxt_data.append(str(pow(int(data), publickey[0], publickey[1])))
+    return " ".join(encryptedtxt_data)
 
 def RSADecoding(encryptedtxt_arr, privatekey):
     plaintxt_data = []
     for data in encryptedtxt_arr:
-        plaintxt_data.append(str((int(data) ** privatekey[0]) % privatekey[1]))
-    return (" ".join(plaintxt_data))
-publickey = (17,3233)
-privatekey= (2753,3233)
-x= RSAEncoding(dataArr,publickey)
-y= RSADecoding(x.split(),privatekey)
+        plaintxt_data.append(str(pow(int(data), privatekey[0], privatekey[1])))
+    return " ".join(plaintxt_data)
+publicKey,privateKey = KeyGenerator.main()
 
-print(" ".join(dataArr))
-print(x)
-print(y)
+
+x= RSAEncoding(dataArr,publicKey)
+y= RSADecoding(x.split(),privateKey)
+
+print(f"Initial Data: {" ".join(dataArr)}")
+print(f"\n\nPublic Key: {publicKey}\n\nEncrypted Data: {x}\n\nPrivate Key: {privateKey}\n\nDecrypted Data (should be identical to initial data): {y}")
