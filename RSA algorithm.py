@@ -21,6 +21,6 @@ publicKey,privateKey = KeyGenerator.main()
 
 x= RSAEncoding(dataArr,publicKey)
 y= RSADecoding(x.split(),privateKey)
-
-print(f"Initial Data: {" ".join(dataArr)}")
+initalData = " ".join(dataArr)
+print(f"Initial Data: {initalData}")
 print(f"\n\nPublic Key: {publicKey}\n\nEncrypted Data: {x}\n\nPrivate Key: {privateKey}\n\nDecrypted Data (should be identical to initial data): {y}")
