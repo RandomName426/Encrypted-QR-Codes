@@ -7,12 +7,18 @@ for char in message:
     
 def RSAEncoding(plaintxt_arr, publickey):
     encryptedtxt_data = []
+    chunkArr = []
+    for count, num in plaintxt_arr:
+        x = int.to_bytes(num)
+        plaintxt_arr[num] = x
+    binarystring = "".join(plaintxt_arr)
     for data in plaintxt_arr:
         encryptedtxt_data.append(str(pow(int(data), publickey[0], publickey[1])))
     return " ".join(encryptedtxt_data)
 
 def RSADecoding(encryptedtxt_arr, privatekey):
     plaintxt_data = []
+
     for data in encryptedtxt_arr:
         plaintxt_data.append(str(pow(int(data), privatekey[0], privatekey[1])))
     return " ".join(plaintxt_data)

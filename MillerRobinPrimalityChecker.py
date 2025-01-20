@@ -31,7 +31,7 @@ def MillerRobinPrimalityChecker(num):
 def main():
     primesList = []
     while len(primesList) < 2: 
-        candidate_for_prime = randbelow(2**3072 - 2**3071) + 2**3071  
+        candidate_for_prime = randbelow(2**2048 - 2**2047) + 2**2047  
         if candidate_for_prime % 2 == 0:
             candidate_for_prime += 1
         if trial_division(candidate_for_prime):
