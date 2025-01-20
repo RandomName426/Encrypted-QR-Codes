@@ -1,6 +1,6 @@
 import KeyGenerator
 
-message = input()
+message = input("Imput Message\n>>> ")
 dataArr = []
 for char in message:
     dataArr.append(str(ord(char)))
