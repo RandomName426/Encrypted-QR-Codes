@@ -2,11 +2,6 @@ import KeyGenerator
 import secrets
 import hashlib
 
-message = input("Imput Message\n>>> ")
-dataArr = []
-for i in list(message):
-    dataArr.append(ord(i))
-
 def seedGen(size):
     return secrets.token_bytes(size)
 
@@ -59,9 +54,37 @@ def rsaOaepDecryption(encryptedTxt,privateKey,hashSize,label=b""):
     recoverdMessage = bytes([maskedMessage[i] ^ recoverdSeed[i % len(recoverdSeed)] for i in range(hashSize)])
     ''.join([chr(byte) for byte in recoverdMessage if byte != 0])
 
-publicKey,privateKey = KeyGenerator.main()
-x= rsaOaepEncryption(dataArr,publicKey)
-y= rsaOaepDecryption(int(x),privateKey,32)
-initalData = " ".join(str(dataArr))
-print(f"Initial Data: {initalData}")
-print(f"\n\nPublic Key: {publicKey}\n\nEncrypted Data: {x}\n\nPrivate Key: {privateKey}\n\nDecrypted Data (should be identical to initial data): {y}")
+def rsaNormalEncryption(plainTxtArr, publicKey):
+    messageBytes = bytes(plainTxtArr)
+    messageInt = int.from_bytes(messageBytes, byteorder="big")
+    encryptedMessage = rsaEncoding(messageInt, publicKey)
+    return encryptedMessage
+
+
+def rsaNormalDecryption(encryptedMessage, privateKey):
+    decryptedMessage = rsaDecrypytion(encryptedMessage, privateKey)
+    messageBytes = decryptedMessage.to_bytes((decryptedMessage.bit_length() + 7) // 8, byteorder="big")
+    return [i for i in messageBytes]
+
+
+def main():
+    message = input("Input Message\n>>> ")
+    dataArr = [ord(i) for i in list(message)]
+    publicKey, privateKey = KeyGenerator.main()
+    encryption_method = input("Choose encryption method (RSA/OAEP): ").strip().lower()
+    if encryption_method == "oaep":
+        encrypted_data = rsaOaepEncryption(dataArr, publicKey)
+        print(f"Encrypted Data (OAEP): {encrypted_data}")
+        decrypted_data = rsaOaepDecryption(encrypted_data[0], privateKey, 32)  # Just using the first chunk here
+    else:
+        encrypted_data = rsaNormalEncryption(dataArr, publicKey)
+        print(f"Encrypted Data (Normal RSA): {encrypted_data}")
+        decrypted_data = ''.join([chr(i) for i in rsaNormalDecryption(encrypted_data, privateKey)])
+
+    print(f"\nInitial Data: {message}")
+    print(f"Encrypted Data: {encrypted_data}")
+    print(f"Decrypted Data (should be identical to initial data): {decrypted_data}")
+
+
+
+main()
