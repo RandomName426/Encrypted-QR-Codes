@@ -60,12 +60,10 @@ def rsaNormalEncryption(plainTxtArr, publicKey):
     encryptedMessage = rsaEncoding(messageInt, publicKey)
     return encryptedMessage
 
-
 def rsaNormalDecryption(encryptedMessage, privateKey):
     decryptedMessage = rsaDecrypytion(encryptedMessage, privateKey)
     messageBytes = decryptedMessage.to_bytes((decryptedMessage.bit_length() + 7) // 8, byteorder="big")
     return [i for i in messageBytes]
-
 
 def main():
     message = input("Input Message\n>>> ")
@@ -84,7 +82,5 @@ def main():
     print(f"\nInitial Data: {message}")
     print(f"Encrypted Data: {encrypted_data}")
     print(f"Decrypted Data (should be identical to initial data): {decrypted_data}")
-
-
 
 main()
