@@ -28,4 +28,5 @@ S_box = [
 
 def splittingKeyIntoWords(byteKey):
     wordArr = []
-    word = 
+    word = x
+    
