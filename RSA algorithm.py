@@ -1,4 +1,4 @@
-import KeyGenerator
+import KeyGenerator as KG
 import secrets
 import hashlib
 
@@ -68,7 +68,7 @@ def rsaNormalDecryption(encryptedMessage, privateKey):
 def main():
     message = input("Input Message\n>>> ")
     dataArr = [ord(i) for i in list(message)]
-    publicKey, privateKey = KeyGenerator.main()
+    publicKey, privateKey = KG.main()
     encryption_method = input("Choose encryption method (RSA/OAEP): ").strip().lower()
     if encryption_method == "oaep":
         encrypted_data = rsaOaepEncryption(dataArr, publicKey)

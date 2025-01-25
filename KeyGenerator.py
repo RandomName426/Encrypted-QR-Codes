@@ -1,4 +1,4 @@
-import MillerRobinPrimalityChecker
+import MillerRobinPrimalityChecker as PC
 from math import lcm
 class key_generator:
     def __init__(self, first_prime,second_prime):
@@ -36,7 +36,7 @@ class key_generator:
         return public_key,private_key        
 
 def main():
-    prime_1,prime_2 = MillerRobinPrimalityChecker.main()
+    prime_1,prime_2 = PC.main()
     y = key_generator(prime_1,prime_2)
     return key_generator.generate_key(y)
      
