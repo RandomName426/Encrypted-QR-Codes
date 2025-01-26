@@ -1,6 +1,6 @@
 from secrets import randbelow
+
 sBox = [
-    # 0     1    2    3    4    5    6    7    8    9    A    B    C    D    E    F
     0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5, 0x30, 0x01, 0x67, 0x2B, 0xFE, 0xD7, 0xAB, 0x76,
     0xCA, 0x82, 0xC9, 0x7D, 0xFA, 0x59, 0x47, 0xF0, 0xAD, 0xD4, 0xA2, 0xAF, 0x9C, 0xA4, 0x72, 0xC0,
     0xB7, 0xFD, 0x93, 0x26, 0x36, 0x3F, 0xF7, 0xCC, 0x34, 0xA5, 0xE5, 0xF1, 0x71, 0xD8, 0x31, 0x15,
@@ -19,17 +19,14 @@ sBox = [
     0x8C, 0xA1, 0x89, 0x0D, 0xBF, 0xE6, 0x42, 0x68, 0x41, 0x99, 0x2D, 0x0F, 0xB0, 0x54, 0xBB, 0x16
 ]
 
-
 rCon = [
-    0x00, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1B, 0x36
+    0x00000000,0x01000000, 0x02000000, 0x04000000, 0x08000000, 0x10000000, 0x20000000, 0x40000000, 0x80000000, 0x1B000000, 0x36000000
 ]
 
 def rotate_word(word):
-
     return ((word << 8) & 0xFFFFFFFF) | (word >> 24)
 
 def sub_word(word):
-
     return ((sBox[(word >> 24) & 0xFF] << 24) |
             (sBox[(word >> 16) & 0xFF] << 16) |
             (sBox[(word >> 8) & 0xFF] << 8) |
@@ -39,18 +36,24 @@ def key_expansion(byte_key):
     Nk, Nr, Nb = 4, 10, 4 
     expanded_key = [0] * (Nb * (Nr + 1)) 
 
+
     for i in range(Nk):
         expanded_key[i] = ((byte_key[(4 * i) + 0] << 24) |
                            (byte_key[(4 * i) + 1] << 16) |
                            (byte_key[(4 * i) + 2] << 8) |
                            byte_key[(4 * i) + 3])
 
-    for i in range(Nk, Nb * (Nr + 1)):
-        temp = expanded_key[i - 1]
-        if i % Nk == 0:
-            temp = sub_word(rotate_word(temp)) ^ rCon[i // Nk]
-        expanded_key[i] = expanded_key[i - Nk] ^ temp
 
+    for i in range(Nk, Nb * (Nr + 1)):  
+        temp = expanded_key[i - 1]  
+        if i % Nk == 0:
+            temp = rotate_word(temp)  
+            temp = sub_word(temp)  
+            temp = temp ^ rCon[i // Nk]  
+        elif Nk > 6 and i % Nk == 4:
+            temp = sub_word(temp)
+        expanded_key[i] = temp ^ expanded_key[i - Nk] 
+        
     return expanded_key
 
 def round_keys(expanded_key):
@@ -67,7 +70,7 @@ def main():
 
     int_key = randbelow(2**128 - 2**127) + 2**127  
     byte_key = int_key.to_bytes(16, 'big')
+    b'\xb9\xc8\x7b\x51\x19\x47\xdb\xb7\x6b\xbd\x07\xe4\xc0\x80\x80\x09'
     expanded_key = key_expansion(byte_key)
     round_keys_list = round_keys(expanded_key)
     return  byte_key, round_keys_list, sBox
-
