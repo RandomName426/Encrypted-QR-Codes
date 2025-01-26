@@ -73,7 +73,7 @@ def main():
     if encryption_method == "oaep":
         encrypted_data = rsaOaepEncryption(dataArr, publicKey)
         print(f"Encrypted Data (OAEP): {encrypted_data}")
-        decrypted_data = rsaOaepDecryption(encrypted_data[0], privateKey, 32)  # Just using the first chunk here
+        decrypted_data = rsaOaepDecryption(encrypted_data[0], privateKey, 32) 
     else:
         encrypted_data = rsaNormalEncryption(dataArr, publicKey)
         print(f"Encrypted Data (Normal RSA): {encrypted_data}")
