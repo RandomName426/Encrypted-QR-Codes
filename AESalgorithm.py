@@ -1,5 +1,5 @@
 import KeyExpansion as KE
-
+import RSAalgorithm as RSA
 def subBytes(sBox,message,encryption):
     if encryption == True:
         subbedMessage = [sBox[byte] for byte in message]
@@ -106,8 +106,6 @@ def Encryption():
     encryptedBytes = bytes.fromhex(encryptedHex)
     return encryptedBytes, originalKey
 
-
-
 def decryption(message,key):
     originalKey, roundKeys, sBox = KE.main(key)
     roundKeys = roundKeys[::-1]
@@ -130,4 +128,5 @@ def decryption(message,key):
     decryptedData = bytes.fromhex(decryptedData).decode('utf-8')
     return decryptedData
 x,y = Encryption()
+
 print(decryption(x,y))
