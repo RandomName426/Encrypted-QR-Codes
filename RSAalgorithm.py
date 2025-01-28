@@ -115,7 +115,7 @@ def Decryption(encrypted_data, privateKey):
         print("Decryption failed - integrity check failed")
         return None
 
-def main(message, key, encryption):
+def main(message,encryption, key):
     if encryption == True:
         encrypted_data = Encryption(message, key)
         return encrypted_data

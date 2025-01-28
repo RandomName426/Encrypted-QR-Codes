@@ -106,7 +106,8 @@ def Encryption(message,pubKey):
     x = b""
     encryptedHex = "".join("".join(f"{byte:02x}" for byte in block) for block in encrypted)
     print("Encrypted hex:", encryptedHex)
-    encryptedBytes = RSA.main(originalKey,True,pubKey) + bytes.fromhex(encryptedHex)
+    encryptedKey = RSA.main(originalKey,True,pubKey)
+    encryptedBytes = encryptedKey + bytes.fromhex(encryptedHex)
     return encryptedBytes
 
 def decryption(message,priKey):
@@ -136,7 +137,7 @@ def decryption(message,priKey):
 keys = KG.main()
 cipher = input("True for encryption, False for decryption: ")
 
-if cipher == "True":
+if cipher.lower() == "true":
     message = input("Enter a message to encrypt: ")
     encrypted = Encryption(message,keys[0])
     print(encrypted)
