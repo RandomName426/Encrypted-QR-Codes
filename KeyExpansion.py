@@ -89,7 +89,6 @@ def main(encryption,key):
     if encryption == True:
         int_key = key  
         byte_key = int_key.to_bytes(16, 'big')
-        byte_key = b'\xb9\xc8\x7b\x51\x19\x47\xdb\xb7\x6b\xbd\x07\xe4\xc0\x80\x80\x09'
         arr = sBox
     else:
         byte_key = key

@@ -112,8 +112,6 @@ def Encryption(message,pubKey):
 def decryption(message,priKey):
     key = RSA.main(message[:1024],False,keys[1])
     message = message[1024:]
-
-
     roundKeys, sBox = KE.main(False,key)
     roundKeys = roundKeys[::-1]
     chunks = chunking(message)
@@ -136,6 +134,15 @@ def decryption(message,priKey):
     return decryptedData
 
 keys = KG.main()
-message = "hello"
-encrypted = Encryption("Hello World",keys[0])
-print(decryption(encrypted,keys[1]))
+cipher = input("True for encryption, False for decryption: ")
+
+if cipher == "True":
+    message = input("Enter a message to encrypt: ")
+    encrypted = Encryption(message,keys[0])
+    print(encrypted)
+else:
+    x = b""
+    str = input("Enter the bytestring to decrypt: ")
+    decrypted = decryption(bytes(str),keys[1])
+    decrypted = decrypted.decode('utf-8')
+    print(decrypted)
