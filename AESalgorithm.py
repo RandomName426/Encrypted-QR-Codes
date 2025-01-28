@@ -1,5 +1,7 @@
+from secrets import randbelow
 import KeyExpansion as KE
 import RSAalgorithm as RSA
+import KeyGenerator as KG
 def subBytes(sBox,message,encryption):
     if encryption == True:
         subbedMessage = [sBox[byte] for byte in message]
@@ -80,10 +82,11 @@ def mixColumns(state,encryption):
                                    galois_multiplication(0x0e, a[3]))
     return newState
 
-def Encryption():
-    originalKey, roundKeys, sBox = KE.main(False)
-    message = input("message: ")
+def Encryption(message,pubKey):
+    originalKey = randbelow(2**128 - 2**127) + 2**127
+    roundKeys, sBox = KE.main(True,originalKey)
     messageBytes = message.encode('utf-8')  
+    print("Message bytes:", messageBytes.hex())
     paddingamount = 16 - len(message)%16
     if paddingamount < 16:
         messageBytes += bytes([paddingamount]*paddingamount)
@@ -91,7 +94,6 @@ def Encryption():
     encrypted = []
     for chunk in chunks:
         state = addRoundKey(chunk,roundKeys[0])
-        print("Input state:", bytes(state).hex())
         for i in range(9):
             state = subBytes(sBox,state,True)
             state = shiftRows(state, True)
@@ -103,11 +105,16 @@ def Encryption():
         encrypted.append(state)
     x = b""
     encryptedHex = "".join("".join(f"{byte:02x}" for byte in block) for block in encrypted)
-    encryptedBytes = bytes.fromhex(encryptedHex)
-    return encryptedBytes, originalKey
+    print("Encrypted hex:", encryptedHex)
+    encryptedBytes = RSA.main(originalKey,True,pubKey) + bytes.fromhex(encryptedHex)
+    return encryptedBytes
 
-def decryption(message,key):
-    originalKey, roundKeys, sBox = KE.main(key)
+def decryption(message,priKey):
+    key = RSA.main(message[:1024],False,keys[1])
+    message = message[1024:]
+
+
+    roundKeys, sBox = KE.main(False,key)
     roundKeys = roundKeys[::-1]
     chunks = chunking(message)
     decrypted = []
@@ -127,6 +134,8 @@ def decryption(message,key):
     decryptedData = paddedHex[:-paddingLength*2]
     decryptedData = bytes.fromhex(decryptedData).decode('utf-8')
     return decryptedData
-x,y = Encryption()
 
-print(decryption(x,y))
+keys = KG.main()
+message = "hello"
+encrypted = Encryption("Hello World",keys[0])
+print(decryption(encrypted,keys[1]))

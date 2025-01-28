@@ -1,4 +1,4 @@
-from secrets import randbelow
+
 inverseSBox = [
     0x52, 0x09, 0x6a, 0xd5, 0x30, 0x36, 0xa5, 0x38, 0xbf, 0x40, 0xa3, 0x9e, 0x81, 0xf3, 0xd7, 0xfb,
     0x7c, 0xe3, 0x39, 0x82, 0x9b, 0x2f, 0xff, 0x87, 0x34, 0x8e, 0x43, 0x44, 0xc4, 0xde, 0xe9, 0xcb,
@@ -84,10 +84,10 @@ def round_keys(expanded_key):
         keys_arr.append(round_key)
     return keys_arr
 
-def main(key):
+def main(encryption,key):
     
-    if key == False:
-        int_key = randbelow(2**128 - 2**127) + 2**127  
+    if encryption == True:
+        int_key = key  
         byte_key = int_key.to_bytes(16, 'big')
         byte_key = b'\xb9\xc8\x7b\x51\x19\x47\xdb\xb7\x6b\xbd\x07\xe4\xc0\x80\x80\x09'
         arr = sBox
@@ -96,4 +96,4 @@ def main(key):
         arr = inverseSBox
     expanded_key = key_expansion(byte_key)
     round_keys_list = round_keys(expanded_key)
-    return  byte_key, round_keys_list, arr
+    return round_keys_list, arr

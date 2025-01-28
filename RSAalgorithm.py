@@ -1,4 +1,4 @@
-import KeyGenerator as KG
+
 from hashlib import sha256 as sha256_hash
 import secrets
 
@@ -26,7 +26,7 @@ def oaepPadding(message, hashSize, keySize):
     maskedSeed = bytes(a ^ b for a, b in zip(seed, seedMask))
     return b"\x00" + maskedSeed + maskedDB
 
-def oaepUnpadding(paddedMessage, hashSize, keySize):
+def oaepUnpadding(paddedMessage, hashSize):
 
     maskedSeed = paddedMessage[1:hashSize+1]
     maskedDB = paddedMessage[hashSize+1:]
@@ -71,29 +71,29 @@ def rsaEncryptWithIntegrity(plainTxtArr, publicKey):
         print(f"Debug - Padding created: {integrityPadding.hex()}")
         paddingInt = int.from_bytes(integrityPadding, byteorder="big")
         encryptedPadding = rsaEncoding(paddingInt, publicKey)
-        return (encryptedMessage, encryptedPadding)
+        return (encryptedMessage.to_bytes(512,"big") + encryptedPadding.to_bytes(512,"big"))
     except Exception as e:
         print(f"Debug - Padding error: {e}")
         return None
-
 def rsaDecryptWithIntegrity(encryptedData, privateKey):
     try:
-        encryptedMessage, encryptedPadding = encryptedData
+        encryptedMessage = encryptedData[:32]
+        encryptedPadding = encryptedData[32:]
         keySize = (privateKey[1].bit_length() + 7) // 8
         hashSize = 32
 
-        decryptedMessage = rsaDecrypytion(encryptedMessage, privateKey)
+        decryptedMessage = rsaDecrypytion(int.from_bytes(encryptedMessage), privateKey)
         messageBytes = decryptedMessage.to_bytes((decryptedMessage.bit_length() + 7) // 8, byteorder="big")
         print(f"Debug - Decrypted message: {messageBytes.hex()}")
 
-        decryptedPadding = rsaDecrypytion(encryptedPadding, privateKey)
+        decryptedPadding = rsaDecrypytion(int.from_bytes(encryptedPadding), privateKey)
         paddingBytes = decryptedPadding.to_bytes(keySize, byteorder="big")
         print(f"Debug - Decrypted padding: {paddingBytes.hex()}")
 
-        decryptedOAEP = oaepUnpadding(paddingBytes, hashSize, keySize)
+        decryptedOAEP = oaepUnpadding(paddingBytes, hashSize)
         if decryptedOAEP == messageBytes:
             print("Data integrity verified!")
-            return [i for i in messageBytes]
+            return messageBytes
             
         print("Warning: Integrity verification failed!")
         return None
@@ -101,23 +101,23 @@ def rsaDecryptWithIntegrity(encryptedData, privateKey):
         print(f"Debug - Decryption error: {e}")
         return None
 
-def main():
-    message = input("Input Message\n>>> ")
-    dataArr = [ord(i) for i in list(message)]
-    publicKey, privateKey = KG.main()
-    
+def Encryption(message,publicKey):
+    message = int.to_bytes(message, 16, byteorder="big")
+    dataArr = [int(byte) for byte in message]
     encrypted_data = rsaEncryptWithIntegrity(dataArr, publicKey)
-    if encrypted_data:
-        print(f"Encrypted Data: {encrypted_data}")
-        
-        decrypted_data = rsaDecryptWithIntegrity(encrypted_data, privateKey)
-        if decrypted_data:
-            message = ''.join([chr(i) for i in decrypted_data])
-            print(f"Decrypted message: {message}")
-        else:
-            print("Decryption failed - integrity check failed")
+    print(f"Encrypted Data: {encrypted_data}")
+    return encrypted_data
+def Decryption(encrypted_data,privateKey):    
+    decrypted_data = rsaDecryptWithIntegrity(encrypted_data, privateKey)
+    if decrypted_data:
+        print(f"Decrypted message: {decrypted_data}")
+        return decrypted_data
     else:
-        print("Encryption failed")
+        print("Decryption failed - integrity check failed")
 
-if __name__ == "__main__":
-    main()
+
+def main(message,encrypt,key):
+    if encrypt == True:
+        return Encryption(message,key)
+    else:
+        return Decryption(message,key)
