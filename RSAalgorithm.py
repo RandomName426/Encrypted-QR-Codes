@@ -1,13 +1,11 @@
-
-from hashlib import sha256 as sha256_hash
 import secrets
+from hashlib import sha256 as sha256_hash
 
 def sha256(data):
     return sha256_hash(data).digest()
 
 def mgf1(seed, mask_len):
     mask = b""
-    hash_len = 32  
     counter = 0
     while len(mask) < mask_len:
         counter_bytes = counter.to_bytes(4, byteorder="big")
@@ -26,8 +24,7 @@ def oaepPadding(message, hashSize, keySize):
     maskedSeed = bytes(a ^ b for a, b in zip(seed, seedMask))
     return b"\x00" + maskedSeed + maskedDB
 
-def oaepUnpadding(paddedMessage, hashSize):
-
+def oaepUnpadding(paddedMessage, hashSize, keySize):
     maskedSeed = paddedMessage[1:hashSize+1]
     maskedDB = paddedMessage[hashSize+1:]
 
@@ -53,44 +50,43 @@ def rsaEncoding(messageInt, publicKey):
     e, n = publicKey
     return pow(messageInt, e, n)
 
-def rsaDecrypytion(cipherInt, privateKey):
+def rsaDecryption(cipherInt, privateKey):
     d, n = privateKey
     return pow(cipherInt, d, n)
 
 def rsaEncryptWithIntegrity(plainTxtArr, publicKey):
-
     messageBytes = bytes(plainTxtArr)
-    messageInt = int.from_bytes(messageBytes, byteorder="big")
-    encryptedMessage = rsaEncoding(messageInt, publicKey)
-
     keySize = (publicKey[1].bit_length() + 7) // 8
     hashSize = 32 
 
     try:
         integrityPadding = oaepPadding(messageBytes, hashSize, keySize)
-        print(f"Debug - Padding created: {integrityPadding.hex()}")
         paddingInt = int.from_bytes(integrityPadding, byteorder="big")
         encryptedPadding = rsaEncoding(paddingInt, publicKey)
-        return (encryptedMessage.to_bytes(512,"big") + encryptedPadding.to_bytes(512,"big"))
+        
+        encryptedMessage = rsaEncoding(int.from_bytes(messageBytes, byteorder="big"), publicKey)
+        
+        return encryptedMessage.to_bytes(keySize, byteorder="big") + encryptedPadding.to_bytes(keySize, byteorder="big")
     except Exception as e:
         print(f"Debug - Padding error: {e}")
         return None
+
 def rsaDecryptWithIntegrity(encryptedData, privateKey):
     try:
-        encryptedMessage = encryptedData[:32]
-        encryptedPadding = encryptedData[32:]
         keySize = (privateKey[1].bit_length() + 7) // 8
         hashSize = 32
 
-        decryptedMessage = rsaDecrypytion(int.from_bytes(encryptedMessage), privateKey)
+        encryptedMessage = encryptedData[:keySize]
+        encryptedPadding = encryptedData[keySize:]
+        print(f"\n\nEncrypted Message: {encryptedMessage.hex()}\n")
+        print(f"\n\nEncrypted Padding: {encryptedPadding.hex()}\n")
+        decryptedMessage = rsaDecryption(int.from_bytes(encryptedMessage, byteorder="big"), privateKey)
         messageBytes = decryptedMessage.to_bytes((decryptedMessage.bit_length() + 7) // 8, byteorder="big")
-        print(f"Debug - Decrypted message: {messageBytes.hex()}")
 
-        decryptedPadding = rsaDecrypytion(int.from_bytes(encryptedPadding), privateKey)
+        decryptedPadding = rsaDecryption(int.from_bytes(encryptedPadding, byteorder="big"), privateKey)
         paddingBytes = decryptedPadding.to_bytes(keySize, byteorder="big")
-        print(f"Debug - Decrypted padding: {paddingBytes.hex()}")
 
-        decryptedOAEP = oaepUnpadding(paddingBytes, hashSize)
+        decryptedOAEP = oaepUnpadding(paddingBytes, hashSize, keySize)
         if decryptedOAEP == messageBytes:
             print("Data integrity verified!")
             return messageBytes
@@ -101,23 +97,27 @@ def rsaDecryptWithIntegrity(encryptedData, privateKey):
         print(f"Debug - Decryption error: {e}")
         return None
 
-def Encryption(message,publicKey):
-    message = int.to_bytes(message, 16, byteorder="big")
-    dataArr = [int(byte) for byte in message]
+def Encryption(message, publicKey):
+    messageBytes = message.to_bytes(16, byteorder="big")
+    dataArr = [int(byte) for byte in messageBytes]
     encrypted_data = rsaEncryptWithIntegrity(dataArr, publicKey)
-    print(f"Encrypted Data: {encrypted_data}")
+    print(f"Encrypted Data: {encrypted_data.hex()}")
     return encrypted_data
-def Decryption(encrypted_data,privateKey):    
+
+def Decryption(encrypted_data, privateKey):    
     decrypted_data = rsaDecryptWithIntegrity(encrypted_data, privateKey)
     if decrypted_data:
-        print(f"Decrypted message: {decrypted_data}")
-        return decrypted_data
+        message = int.from_bytes(decrypted_data, byteorder="big")
+        print(f"Decrypted message: {message}")
+        return message
     else:
         print("Decryption failed - integrity check failed")
+        return None
 
-
-def main(message,encrypt,key):
-    if encrypt == True:
-        return Encryption(message,key)
+def main(message, encryption, key):
+    if encryption == True:
+        encrypted_data = Encryption(message, key)
+        return encrypted_data
     else:
-        return Decryption(message,key)
+        decrypted_data = Decryption(message, key)
+        return decrypted_data

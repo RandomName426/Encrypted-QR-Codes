@@ -2,22 +2,23 @@ from secrets import randbelow
 import KeyExpansion as KE
 import RSAalgorithm as RSA
 import KeyGenerator as KG
-def subBytes(sBox,message,encryption):
+
+def subBytes(sBox, message, encryption):
     if encryption == True:
         subbedMessage = [sBox[byte] for byte in message]
     else:
         subbedMessage = [sBox[byte] for byte in message]
     return subbedMessage
-        
+
 def chunking(message):
     chunks = []
     for i in range(0, len(message), 16):
         chunks.append(message[i:i+16])
     return chunks
-        
+
 def addRoundKey(message, roundKey):
     return [message[i] ^ roundKey[i] for i in range(16)]
-          
+
 def shiftRows(state, encryption):
     shifted = []
     if encryption == True:
@@ -38,7 +39,7 @@ def galois_multiplication(a, b):
         b >>= 1
     return p & 0xFF
 
-def mixColumns(state,encryption):
+def mixColumns(state, encryption):
     newState = [0] * 16
     if encryption == True:
         for col in range(4):
@@ -82,41 +83,34 @@ def mixColumns(state,encryption):
                                    galois_multiplication(0x0e, a[3]))
     return newState
 
-def Encryption(message,pubKey):
-    originalKey = randbelow(2**128 - 2**127) + 2**127
-    roundKeys, sBox = KE.main(True,originalKey)
-    messageBytes = message.encode('utf-8')  
-    print("Message bytes:", messageBytes.hex())
-    paddingamount = 16 - len(message)%16
+def encrypt_aes(data, key):
+    originalKey = key
+    roundKeys, sBox = KE.main(True, originalKey)
+    messageBytes = data.encode('utf-8')
+    paddingamount = 16 - len(messageBytes) % 16
     if paddingamount < 16:
-        messageBytes += bytes([paddingamount]*paddingamount)
+        messageBytes += bytes([paddingamount] * paddingamount)
     chunks = chunking(messageBytes)
     encrypted = []
     for chunk in chunks:
-        state = addRoundKey(chunk,roundKeys[0])
+        state = addRoundKey(chunk, roundKeys[0])
         for i in range(9):
-            state = subBytes(sBox,state,True)
+            state = subBytes(sBox, state, True)
             state = shiftRows(state, True)
             state = mixColumns(state, True)
-            state = addRoundKey(state,roundKeys[i+1])
+            state = addRoundKey(state, roundKeys[i+1])
         state = subBytes(sBox, state, True)
         state = shiftRows(state, True)
         state = addRoundKey(state, roundKeys[10])
         encrypted.append(state)
-    x = b""
     encryptedHex = "".join("".join(f"{byte:02x}" for byte in block) for block in encrypted)
-    print("Encrypted hex:", encryptedHex)
-    encryptedBytes = RSA.main(originalKey,True,pubKey) + bytes.fromhex(encryptedHex)
-    return encryptedBytes
+    return originalKey, encryptedHex
 
-def decryption(message,priKey):
-    key = RSA.main(message[:1024],False,keys[1])
-    message = message[1024:]
-
-
-    roundKeys, sBox = KE.main(False,key)
+def decrypt_aes(message, key):
+    originalKey = key
+    roundKeys, sBox = KE.main(False, originalKey)
     roundKeys = roundKeys[::-1]
-    chunks = chunking(message)
+    chunks = chunking(bytes.fromhex(message))
     decrypted = []
     for chunk in chunks:
         state = addRoundKey(chunk, roundKeys[0])
@@ -124,18 +118,25 @@ def decryption(message,priKey):
             state = shiftRows(state, False)
             state = subBytes(sBox, state, False)
             state = addRoundKey(state, roundKeys[i + 1])    
-            state = mixColumns(state,False)
+            state = mixColumns(state, False)
         state = shiftRows(state, False)
         state = subBytes(sBox, state, False)
         state = addRoundKey(state, roundKeys[10])
         decrypted.append(state)
     paddedHex = "".join("".join(f"{byte:02x}" for byte in block) for block in decrypted)
-    paddingLength = int(paddedHex[-2:],16)
+    paddingLength = int(paddedHex[-2:], 16)
     decryptedData = paddedHex[:-paddingLength*2]
     decryptedData = bytes.fromhex(decryptedData).decode('utf-8')
     return decryptedData
 
-keys = KG.main()
-message = "hello"
-encrypted = Encryption("Hello World",keys[0])
-print(decryption(encrypted,keys[1]))
+def Encryption(message, pubKey):
+    aes_key = randbelow(2**128 - 2**127) + 2**127
+    encrypted_aes_key, encrypted_message = encrypt_aes(message, aes_key)
+    encryptedKey = RSA.main(encrypted_aes_key, True, pubKey)
+    return encryptedKey + encrypted_message.encode('utf-8')
+
+def Decryption(encrypted_data, privateKey):
+    encrypted_aes_key = RSA.main(encrypted_data[:1024], False, privateKey)
+    encrypted_message = encrypted_data[1024:].decode('utf-8')
+    decrypted_message = decrypt_aes(encrypted_message, encrypted_aes_key)
+    return decrypted_message

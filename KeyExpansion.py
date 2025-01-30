@@ -37,9 +37,7 @@ sBox = [
     0x8C, 0xA1, 0x89, 0x0D, 0xBF, 0xE6, 0x42, 0x68, 0x41, 0x99, 0x2D, 0x0F, 0xB0, 0x54, 0xBB, 0x16
 ]
 
-rCon = [
-    0x00000000,0x01000000, 0x02000000, 0x04000000, 0x08000000, 0x10000000, 0x20000000, 0x40000000, 0x80000000, 0x1B000000, 0x36000000
-]
+rCon = [0x00000000, 0x01000000, 0x02000000, 0x04000000, 0x08000000, 0x10000000, 0x20000000, 0x40000000, 0x80000000, 0x1B000000, 0x36000000]
 
 def rotate_word(word):
     return ((word << 8) & 0xFFFFFFFF) | (word >> 24)
@@ -51,32 +49,27 @@ def sub_word(word):
             sBox[word & 0xFF])
 
 def key_expansion(byte_key):
-    Nk, Nr, Nb = 4, 10, 4 
-    expanded_key = [0] * (Nb * (Nr + 1)) 
-
-
+    Nk, Nr, Nb = 4, 10, 4
+    expanded_key = [0] * (Nb * (Nr + 1))
     for i in range(Nk):
         expanded_key[i] = ((byte_key[(4 * i) + 0] << 24) |
                            (byte_key[(4 * i) + 1] << 16) |
                            (byte_key[(4 * i) + 2] << 8) |
                            byte_key[(4 * i) + 3])
-
-
-    for i in range(Nk, Nb * (Nr + 1)):  
-        temp = expanded_key[i - 1]  
+    for i in range(Nk, Nb * (Nr + 1)):
+        temp = expanded_key[i - 1]
         if i % Nk == 0:
-            temp = rotate_word(temp)  
-            temp = sub_word(temp)  
-            temp = temp ^ rCon[i // Nk]  
+            temp = rotate_word(temp)
+            temp = sub_word(temp)
+            temp = temp ^ rCon[i // Nk]
         elif Nk > 6 and i % Nk == 4:
-            temp = sub_word(temp) 
-        expanded_key[i] = temp ^ expanded_key[i - Nk] 
-        
+            temp = sub_word(temp)
+        expanded_key[i] = temp ^ expanded_key[i - Nk]
     return expanded_key
 
 def round_keys(expanded_key):
     keys_arr = []
-    for i in range(11): 
+    for i in range(11):
         round_key = []
         for j in range(4):
             word = expanded_key[4 * i + j]
@@ -84,12 +77,10 @@ def round_keys(expanded_key):
         keys_arr.append(round_key)
     return keys_arr
 
-def main(encryption,key):
-    
+def main(encryption, key):
     if encryption == True:
-        int_key = key  
+        int_key = key
         byte_key = int_key.to_bytes(16, 'big')
-        byte_key = b'\xb9\xc8\x7b\x51\x19\x47\xdb\xb7\x6b\xbd\x07\xe4\xc0\x80\x80\x09'
         arr = sBox
     else:
         byte_key = key

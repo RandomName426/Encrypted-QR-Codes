@@ -1,42 +1,38 @@
-import MillerRobinPrimalityChecker as PC
-from math import lcm
-class key_generator:
-    def __init__(self, first_prime,second_prime):
-        self.p = first_prime - 1
-        self.q = second_prime - 1
-        self.n = first_prime * second_prime
-        self.carmichael_lambda_function = self.lcm(self.p,self.q)
-        self.e = 65537
-    
-    def lcm(self,a,b):
-        from math import gcd
-        return abs(a * b)// gcd(a,b)
+import MillerRobinPrimalityChecker
 
-    def extended_euclidean_algorithm(self,a,b):
-        x0,x1 = 1, 0 
-        y0,y1 = 0, 1  
-        while b != 0:
-            q,r = divmod(a, b)
-            x0,x1 = x1, x0 - q * x1
-            y0,y1 = y1, y0 - q * y1
-            a,b = b, r
-        return a,x0,y0
-    
-    def modular_inverse(self, a, m):
-        g,x,y = self.extended_euclidean_algorithm(a, m)
-        if g != 1:
-            raise ValueError(f"{a} has no modular inverse modulo {m}")
-        else:
-            return x % m  
-    
-    def generate_key(self):
-        d = self.modular_inverse(self.e,self.carmichael_lambda_function)
-        public_key = (self.e,self.n)
-        private_key = (d,self.n)
-        return public_key,private_key        
+# Dictionary to store keys
+key_store = {}
 
-def main():
-    prime_1,prime_2 = PC.main()
-    y = key_generator(prime_1,prime_2)
-    return key_generator.generate_key(y)
-     
+def generate_keys(username):
+    prime1 = MillerRobinPrimalityChecker.generate_prime()
+    prime2 = MillerRobinPrimalityChecker.generate_prime()
+    public_key, private_key = create_rsa_keys(prime1, prime2)
+    key_store[username] = {'public_key': public_key, 'private_key': private_key}
+    return public_key, private_key
+
+def create_rsa_keys(prime1, prime2):
+    n = prime1 * prime2
+    phi = (prime1 - 1) * (prime2 - 1)
+    e = 65537  # Commonly used prime exponent
+    d = modinv(e, phi)
+    public_key = (e, n)
+    private_key = (d, n)
+    return public_key, private_key
+
+def modinv(a, m):
+    m0, x0, x1 = m, 0, 1
+    if m == 1:
+        return 0
+    while a > 1:
+        q = a // m
+        m, a = a % m, m
+        x0, x1 = x1 - q * x0, x0
+    if x1 < 0:
+        x1 += m0
+    return x1
+
+def get_private_key(username):
+    return key_store.get(username, {}).get('private_key')
+
+def get_public_key(username):
+    return key_store.get(username, {}).get('public_key')
