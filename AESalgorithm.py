@@ -128,15 +128,3 @@ def decrypt_aes(message, key):
     decryptedData = paddedHex[:-paddingLength*2]
     decryptedData = bytes.fromhex(decryptedData).decode('utf-8')
     return decryptedData
-
-def Encryption(message, pubKey):
-    aes_key = randbelow(2**128 - 2**127) + 2**127
-    encrypted_aes_key, encrypted_message = encrypt_aes(message, aes_key)
-    encryptedKey = RSA.main(encrypted_aes_key, True, pubKey)
-    return encryptedKey + encrypted_message.encode('utf-8')
-
-def Decryption(encrypted_data, privateKey):
-    encrypted_aes_key = RSA.main(encrypted_data[:1024], False, privateKey)
-    encrypted_message = encrypted_data[1024:].decode('utf-8')
-    decrypted_message = decrypt_aes(encrypted_message, encrypted_aes_key)
-    return decrypted_message

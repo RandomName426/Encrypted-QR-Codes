@@ -2,8 +2,8 @@ import tkinter as tk
 import qrcode
 from tkinter import messagebox
 from AESalgorithm import encrypt_aes
-from RSAalgorithm import encrypt_rsa
-from KeyGenerator import generate_keys
+from RSAalgorithm import Encryption
+from utils.qr_code_maker import create_qr_code
 
 class GenerateQRPage(tk.Frame):
     def __init__(self, parent, controller):
@@ -19,16 +19,15 @@ class GenerateQRPage(tk.Frame):
         self.generate_button = tk.Button(self, text="Generate QR Code", command=self.generate_qr_code)
         self.generate_button.pack(pady=10)
 
+        self.back_button = tk.Button(self, text="Back", command=lambda: controller.show_frame("ScanPage"))
+        self.back_button.pack(pady=10)
+
     def generate_qr_code(self):
         data = self.data_entry.get()
-        aes_key = generate_keys()[0]  # Get a new public key as AES key
-        nonce, ciphertext, tag = encrypt_aes(data, aes_key)
-        encrypted_key = encrypt_rsa(aes_key, self.controller.username)  # Encrypt AES key with user's public key
-        qr_data = f"{encrypted_key}:{nonce}:{ciphertext}:{tag}"
-        qr = qrcode.QRCode()
-        qr.add_data(qr_data)
-        qr.make(fit=True)
-        img = qr.make_image(fill='black', back_color='white')
-        img.show()
-        img.save("qrcode.png")
+        recipient_username = self.controller.username  # Replace with actual recipient username
+        public_key = self.controller.db.get_public_key(recipient_username)
+        aes_key, encrypted_message = encrypt_aes(data, randbelow(2**128 - 2**127) + 2**127)
+        encrypted_key = Encryption(aes_key, public_key)
+        qr_data = encrypted_key.hex() + encrypted_message
+        create_qr_code(qr_data)
         messagebox.showinfo("QR Code", "QR Code generated and saved as qrcode.png")
