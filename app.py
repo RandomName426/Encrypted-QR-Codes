@@ -27,10 +27,11 @@ def login():
         username = request.form['username']
         password = request.form['password']
         if db.validate_user(username, password):
-            session['username'] = username
+            session['username'] = username  # Store the username in the session
+            flash('Logged in successfully.')
             return redirect(url_for('index'))
         else:
-            flash('Invalid username or password')
+            flash('Invalid username or password.')
     return render_template('login.html')
 
 @app.route('/logout')
@@ -72,19 +73,28 @@ def account():
 @login_required
 def decode_qr():
     try:
-        # Read the raw bytes from the request data
-        qr_bytes = request.data
-        print(f"Received QR bytes: {qr_bytes}")
+        # Read the QR data from the request
+        data = request.get_json()
+        qr_data = data.get('qrData')
 
-        # Assuming you have a function to decrypt the data
-        decrypted_data = Decryption(qr_bytes)
-        print(f"Decrypted Data: {decrypted_data}")
+        if not qr_data:
+            return jsonify({'error': 'No QR data provided'}), 400
+
+        # Retrieve the username from the session
+        username = session.get('username')
+        if not username:
+            return jsonify({'error': 'User not logged in'}), 401
+
+        # Get the private key for decryption
+        private_key = db.get_private_key(username)  # Replace with your method to get the private key
+
+        # Decrypt the QR data
+        decrypted_data = Decryption(qr_data, private_key)
 
         return jsonify({'decryptedData': decrypted_data})
     except Exception as e:
         print(f"Error decoding QR code: {e}")
         return jsonify({'error': 'Failed to decode QR code'}), 400
-
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

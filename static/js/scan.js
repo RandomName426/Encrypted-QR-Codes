@@ -30,6 +30,7 @@ document.getElementById('qr-form').addEventListener('submit', function(event) {
                     decoder: {
                         readers: ["qr_reader"]  // List of active readers
                     },
+                    locate: true
                 }, function(result) {
                     if (result && result.codeResult) {
                         const qrData = result.codeResult.code;
