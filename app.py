@@ -80,12 +80,8 @@ def decode_qr():
         if not qr_data:
             return jsonify({'error': 'No QR data provided'}), 400
 
-        # Print received data for debugging
-        print(f"Received QR Data (raw bytes): {qr_data}")
-
         # Decompress the QR data
         decompressed_data = zlib.decompress(qr_data)
-        print(f"Decompressed Data: {decompressed_data}")
 
         # Retrieve the username from the session
         username = session.get('username')

@@ -56,6 +56,7 @@ def rsaDecryption(cipherInt, privateKey):
 
 def rsaEncryptWithIntegrity(plainTxtArr, publicKey):
     messageBytes = bytes(plainTxtArr)
+    print(f"Messagebytes: {messageBytes.hex()}")
     keySize = (publicKey[1].bit_length() + 7) // 8
     hashSize = 32 
 
@@ -63,9 +64,9 @@ def rsaEncryptWithIntegrity(plainTxtArr, publicKey):
         integrityPadding = oaepPadding(messageBytes, hashSize, keySize)
         paddingInt = int.from_bytes(integrityPadding, byteorder="big")
         encryptedPadding = rsaEncoding(paddingInt, publicKey)
-        
+        print(f"Encrypted Padding: {hex(encryptedPadding)}")
         encryptedMessage = rsaEncoding(int.from_bytes(messageBytes, byteorder="big"), publicKey)
-        
+        print(f"Encrypted Message: {hex(encryptedMessage)}")
         return encryptedMessage.to_bytes(keySize, byteorder="big") + encryptedPadding.to_bytes(keySize, byteorder="big")
     except Exception as e:
         print(f"Debug - Padding error: {e}")
@@ -76,14 +77,17 @@ def rsaDecryptWithIntegrity(encryptedData, privateKey):
         keySize = (privateKey[1].bit_length() + 7) // 8
         hashSize = 32
 
-        encryptedMessage = encryptedData[:keySize]
-        encryptedPadding = encryptedData[keySize:]
+        encryptedMessage = encryptedData[:(keySize*2)]
+        print(f"Encrypted Message: {encryptedMessage}")
+        encryptedPadding = encryptedData[(keySize*2):]
+        print(f"Encrypted Padding: {encryptedPadding}")
         decryptedMessage = rsaDecryption(int.from_bytes(encryptedMessage, byteorder="big"), privateKey)
         messageBytes = decryptedMessage.to_bytes((decryptedMessage.bit_length() + 7) // 8, byteorder="big")
-
+        print(f"Decrypted Message: {messageBytes}")
+        print(f"Messagebytes: {messageBytes.hex()}")
         decryptedPadding = rsaDecryption(int.from_bytes(encryptedPadding, byteorder="big"), privateKey)
         paddingBytes = decryptedPadding.to_bytes(keySize, byteorder="big")
-
+        print(f"Decrypted Padding: {paddingBytes}")
         decryptedOAEP = oaepUnpadding(paddingBytes, hashSize, keySize)
         if decryptedOAEP == messageBytes:
             print("Data integrity verified!")
