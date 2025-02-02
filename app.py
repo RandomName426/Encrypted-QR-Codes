@@ -47,6 +47,7 @@ def generate():
         recipient = request.form['recipient']
         data = request.form['data']
         public_key = db.get_public_key(recipient)
+        print(f"Public Key: {public_key}")
         encrypted_data = Encryption(data, public_key)
         qr_data = encrypted_data.hex()
         create_qr_code(qr_data)
@@ -90,7 +91,7 @@ def decode_qr():
 
         # Get the private key for decryption
         private_key = db.get_private_key(username)  # Replace with your method to get the private key
-
+        print(f"Private Key: {private_key}")
         # Decrypt the decompressed data
         decrypted_data = Decryption(decompressed_data, private_key)
 

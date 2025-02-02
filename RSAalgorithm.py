@@ -54,8 +54,7 @@ def rsaDecryption(cipherInt, privateKey):
     d, n = privateKey
     return pow(cipherInt, d, n)
 
-def rsaEncryptWithIntegrity(plainTxtArr, publicKey):
-    messageBytes = bytes(plainTxtArr)
+def rsaEncryptWithIntegrity(messageBytes, publicKey):
     print(f"Messagebytes: {messageBytes.hex()}")
     keySize = (publicKey[1].bit_length() + 7) // 8
     hashSize = 32 
@@ -65,8 +64,10 @@ def rsaEncryptWithIntegrity(plainTxtArr, publicKey):
         paddingInt = int.from_bytes(integrityPadding, byteorder="big")
         encryptedPadding = rsaEncoding(paddingInt, publicKey)
         print(f"Encrypted Padding: {hex(encryptedPadding)}")
+        print(f"MessagebytesInt: {int.from_bytes(messageBytes, byteorder='big')}")
         encryptedMessage = rsaEncoding(int.from_bytes(messageBytes, byteorder="big"), publicKey)
-        print(f"Encrypted Message: {hex(encryptedMessage)}")
+        print(f"Encrypted Message Int: {encryptedMessage}")
+        print(f"Encrypted Message Hex : {hex(encryptedMessage)}")
         return encryptedMessage.to_bytes(keySize, byteorder="big") + encryptedPadding.to_bytes(keySize, byteorder="big")
     except Exception as e:
         print(f"Debug - Padding error: {e}")
@@ -81,9 +82,11 @@ def rsaDecryptWithIntegrity(encryptedData, privateKey):
         print(f"Encrypted Message: {encryptedMessage}")
         encryptedPadding = encryptedData[(keySize*2):]
         print(f"Encrypted Padding: {encryptedPadding}")
+        print(f"Encrypted Message: {int.from_bytes(encryptedMessage, byteorder='big')}")
         decryptedMessage = rsaDecryption(int.from_bytes(encryptedMessage, byteorder="big"), privateKey)
+        print(f"Decrypted Message Int: {decryptedMessage}")
+        print(f"Decrypted Message Hex: {hex(decryptedMessage)}")
         messageBytes = decryptedMessage.to_bytes((decryptedMessage.bit_length() + 7) // 8, byteorder="big")
-        print(f"Decrypted Message: {messageBytes}")
         print(f"Messagebytes: {messageBytes.hex()}")
         decryptedPadding = rsaDecryption(int.from_bytes(encryptedPadding, byteorder="big"), privateKey)
         paddingBytes = decryptedPadding.to_bytes(keySize, byteorder="big")
@@ -101,8 +104,7 @@ def rsaDecryptWithIntegrity(encryptedData, privateKey):
 
 def Encryption(message, publicKey):
     messageBytes = message.to_bytes(16, byteorder="big")
-    dataArr = [int(byte) for byte in messageBytes]
-    encrypted_data = rsaEncryptWithIntegrity(dataArr, publicKey)
+    encrypted_data = rsaEncryptWithIntegrity(messageBytes, publicKey)
     return encrypted_data
 
 def Decryption(encrypted_data, privateKey):    
