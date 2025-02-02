@@ -51,7 +51,7 @@ def rsaEncoding(messageInt, publicKey):
     e, n = publicKey
     return pow(messageInt, e, n)
 
-def rsaDecryption(cipherInt, privateKey):
+
 def rsaDecryption(cipherInt, privateKey):
     d, n = privateKey
     return pow(cipherInt, d, n)
@@ -122,7 +122,7 @@ def Encryption(message, publicKey):
     print(f"Encrypted Data: {encrypted_data.hex()}")
     return encrypted_data
 
-def Decryption(encrypted_data, privateKey):    
+   
 
 def Decryption(encrypted_data, privateKey):    
     decrypted_data = rsaDecryptWithIntegrity(encrypted_data, privateKey)

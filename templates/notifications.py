@@ -11,8 +11,11 @@ class NotificationsPage(tk.Frame):
         self.notifications_listbox = tk.Listbox(self)
         self.notifications_listbox.pack(pady=10)
 
-        self.load_notifications()
+        self.back_button = tk.Button(self, text="Back", command=lambda: controller.show_frame("ScanPage"))
+        self.back_button.pack(pady=10)
 
-    def load_notifications(self):
-        # Implement logic to load notifications
-        pass
+    def update_notifications(self):
+        self.notifications_listbox.delete(0, tk.END)
+        notifications = self.controller.db.get_notifications(self.controller.username)
+        for notification in notifications:
+            self.notifications_listbox.insert(tk.END, notification)

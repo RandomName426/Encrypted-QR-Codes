@@ -1,9 +1,9 @@
 import tkinter as tk
-import qrcode
 from tkinter import messagebox
 from AESalgorithm import encrypt_aes
 from RSAalgorithm import Encryption
 from utils.qr_code_maker import create_qr_code
+from secrets import randbelow
 
 class GenerateQRPage(tk.Frame):
     def __init__(self, parent, controller):
