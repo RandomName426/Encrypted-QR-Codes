@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+    <h2>Scan QR Code</h2>
+    <p>Scan a QR code using your device's camera.</p>
+    <!-- Add a video element to display the camera feed -->
+    <video id="video" width="640" height="480" autoplay></video>
+    <button onclick="startScan()">Start Scan</button>
+    <script src="{{ url_for('static', filename='js/scan.js') }}"></script>
+{% endblock %}

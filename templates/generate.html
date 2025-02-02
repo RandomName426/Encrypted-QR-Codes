@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+    <h2>Generate QR Code</h2>
+    <form method="POST" action="{{ url_for('generate') }}">
+        <label for="recipient">Recipient Username:</label>
+        <input type="text" id="recipient" name="recipient" required>
+        <label for="data">Data:</label>
+        <input type="text" id="data" name="data" required>
+        <button type="submit">Generate</button>
+    </form>
+{% endblock %}

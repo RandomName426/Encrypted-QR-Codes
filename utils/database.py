@@ -4,7 +4,7 @@ import pickle  # Import pickle for serialization
 
 class Database:
     def __init__(self):
-        self.conn = sqlite3.connect("app.db")
+        self.conn = sqlite3.connect("app.db", check_same_thread=False)  # Add check_same_thread=False
         self.create_tables()
         self.add_premade_accounts()
 
@@ -49,7 +49,7 @@ class Database:
         ]
         for username, email, password in accounts:
             if not self.user_exists(username):
-                public_key, private_key = KeyGenerator.generate_keys(username)
+                public_key, private_key = KeyGenerator.main()
                 public_key_serialized = pickle.dumps(public_key)  # Serialize the public key
                 private_key_serialized = pickle.dumps(private_key)  # Serialize the private key
                 with self.conn:
