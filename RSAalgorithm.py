@@ -1,4 +1,3 @@
-import KeyGenerator as KG 
 import secrets
 from hashlib import sha256 as sha256_hash
 
@@ -79,8 +78,6 @@ def rsaDecryptWithIntegrity(encryptedData, privateKey):
 
         encryptedMessage = encryptedData[:keySize]
         encryptedPadding = encryptedData[keySize:]
-        print(f"\n\nEncrypted Message: {encryptedMessage.hex()}\n")
-        print(f"\n\nEncrypted Padding: {encryptedPadding.hex()}\n")
         decryptedMessage = rsaDecryption(int.from_bytes(encryptedMessage, byteorder="big"), privateKey)
         messageBytes = decryptedMessage.to_bytes((decryptedMessage.bit_length() + 7) // 8, byteorder="big")
 
@@ -102,21 +99,19 @@ def Encryption(message, publicKey):
     messageBytes = message.to_bytes(16, byteorder="big")
     dataArr = [int(byte) for byte in messageBytes]
     encrypted_data = rsaEncryptWithIntegrity(dataArr, publicKey)
-    print(f"Encrypted Data: {encrypted_data.hex()}")
     return encrypted_data
 
 def Decryption(encrypted_data, privateKey):    
     decrypted_data = rsaDecryptWithIntegrity(encrypted_data, privateKey)
     if decrypted_data:
         message = int.from_bytes(decrypted_data, byteorder="big")
-        print(f"Decrypted message: {message}")
         return message
     else:
         print("Decryption failed - integrity check failed")
         return None
 
 def main(message, encryption, key):
-    if encryption == True:
+    if encryption:
         encrypted_data = Encryption(message, key)
         return encrypted_data
     else:

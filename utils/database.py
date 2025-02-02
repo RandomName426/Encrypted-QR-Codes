@@ -67,10 +67,11 @@ class Database:
 
     def get_user_info(self, username):
         with self.conn:
-            return self.conn.execute("""
+            result = self.conn.execute("""
                 SELECT username, email FROM users WHERE username = ?
             """, (username,)).fetchone()
-
+            return result
+        
     def get_public_key(self, username):
         with self.conn:
             public_key_serialized = self.conn.execute("""

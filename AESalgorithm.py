@@ -1,10 +1,9 @@
 from secrets import randbelow
 import KeyExpansion as KE
 import RSAalgorithm as RSA
-import KeyGenerator as KG
 
 def subBytes(sBox, message, encryption):
-    if encryption == True:
+    if encryption:
         subbedMessage = [sBox[byte] for byte in message]
     else:
         subbedMessage = [sBox[byte] for byte in message]
@@ -21,7 +20,7 @@ def addRoundKey(message, roundKey):
 
 def shiftRows(state, encryption):
     shifted = []
-    if encryption == True:
+    if encryption:
         shifted = [state[i] for i in (0, 5, 10, 15, 4, 9, 14, 3, 8, 13, 2, 7, 12, 1, 6, 11)]
     else:
         shifted = [state[i] for i in (0, 13, 10, 7, 4, 1, 14, 11, 8, 5, 2, 15, 12, 9, 6, 3)]
@@ -41,25 +40,25 @@ def galois_multiplication(a, b):
 
 def mixColumns(state, encryption):
     newState = [0] * 16
-    if encryption == True:
+    if encryption:
         for col in range(4):
             start = col * 4
             a = state[start:start + 4]
-            newState[start + 0] = (galois_multiplication(2, a[0]) ^ 
-                                   galois_multiplication(3, a[1]) ^ 
-                                   a[2] ^ 
+            newState[start + 0] = (galois_multiplication(2, a[0]) ^
+                                   galois_multiplication(3, a[1]) ^
+                                   a[2] ^
                                    a[3])
-            newState[start + 1] = (a[0] ^ 
-                                   galois_multiplication(2, a[1]) ^ 
-                                   galois_multiplication(3, a[2]) ^ 
+            newState[start + 1] = (a[0] ^
+                                   galois_multiplication(2, a[1]) ^
+                                   galois_multiplication(3, a[2]) ^
                                    a[3])
-            newState[start + 2] = (a[0] ^ 
-                                   a[1] ^ 
-                                   galois_multiplication(2, a[2]) ^ 
+            newState[start + 2] = (a[0] ^
+                                   a[1] ^
+                                   galois_multiplication(2, a[2]) ^
                                    galois_multiplication(3, a[3]))
-            newState[start + 3] = (galois_multiplication(3, a[0]) ^ 
-                                   a[1] ^ 
-                                   a[2] ^ 
+            newState[start + 3] = (galois_multiplication(3, a[0]) ^
+                                   a[1] ^
+                                   a[2] ^
                                    galois_multiplication(2, a[3]))
     else:
         for col in range(4):
@@ -117,7 +116,7 @@ def decrypt_aes(message, key):
         for i in range(9):
             state = shiftRows(state, False)
             state = subBytes(sBox, state, False)
-            state = addRoundKey(state, roundKeys[i + 1])    
+            state = addRoundKey(state, roundKeys[i + 1])
             state = mixColumns(state, False)
         state = shiftRows(state, False)
         state = subBytes(sBox, state, False)
@@ -129,6 +128,7 @@ def decrypt_aes(message, key):
     decryptedData = bytes.fromhex(decryptedData).decode('utf-8')
     return decryptedData
 
+# Functions to combine AES and RSA encryptions
 def Encryption(message, pubKey):
     aes_key = randbelow(2**128 - 2**127) + 2**127
     encrypted_aes_key, encrypted_message = encrypt_aes(message, aes_key)

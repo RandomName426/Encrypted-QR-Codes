@@ -7,6 +7,6 @@
         <button type="submit">Scan</button>
     </form>
     <p id="qr-result"></p>
-    <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script> <!-- QuaggaJS library -->
     <script src="{{ url_for('static', filename='js/scan.js') }}"></script>
 {% endblock %}
