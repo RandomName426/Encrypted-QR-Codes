@@ -46,6 +46,7 @@ def generate():
         recipient = request.form['recipient']
         data = request.form['data']
         public_key = db.get_public_key(recipient)
+        print(public_key)
         encrypted_data = Encryption(data, public_key)
         qr_data = encrypted_data.hex()
         create_qr_code(qr_data)
@@ -75,7 +76,7 @@ def decode_qr():
     try:
         # Read the QR data from the request
         qr_data = request.data
-
+        print(f"Qr_data: {qr_data}")
         if not qr_data:
             return jsonify({'error': 'No QR data provided'}), 400
 
@@ -86,7 +87,7 @@ def decode_qr():
 
         # Get the private key for decryption
         private_key = db.get_private_key(username)  # Replace with your method to get the private key
-
+        print(private_key)
         # Decrypt the QR data
         decrypted_data = Decryption(qr_data, private_key)
 
