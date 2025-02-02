@@ -74,8 +74,7 @@ def account():
 def decode_qr():
     try:
         # Read the QR data from the request
-        data = request.get_json()
-        qr_data = data.get('qrData')
+        qr_data = request.data
 
         if not qr_data:
             return jsonify({'error': 'No QR data provided'}), 400
