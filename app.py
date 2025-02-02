@@ -3,6 +3,7 @@ from utils.database import Database
 from AESalgorithm import Encryption, Decryption
 from utils.qr_code_maker import create_qr_code
 from functools import wraps
+import zlib
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # Replace with a strong secret key
@@ -46,7 +47,6 @@ def generate():
         recipient = request.form['recipient']
         data = request.form['data']
         public_key = db.get_public_key(recipient)
-        print(public_key)
         encrypted_data = Encryption(data, public_key)
         qr_data = encrypted_data.hex()
         create_qr_code(qr_data)
@@ -76,9 +76,16 @@ def decode_qr():
     try:
         # Read the QR data from the request
         qr_data = request.data
-        print(f"Qr_data: {qr_data}")
+
         if not qr_data:
             return jsonify({'error': 'No QR data provided'}), 400
+
+        # Print received data for debugging
+        print(f"Received QR Data (raw bytes): {qr_data}")
+
+        # Decompress the QR data
+        decompressed_data = zlib.decompress(qr_data)
+        print(f"Decompressed Data: {decompressed_data}")
 
         # Retrieve the username from the session
         username = session.get('username')
@@ -87,9 +94,9 @@ def decode_qr():
 
         # Get the private key for decryption
         private_key = db.get_private_key(username)  # Replace with your method to get the private key
-        print(private_key)
-        # Decrypt the QR data
-        decrypted_data = Decryption(qr_data, private_key)
+
+        # Decrypt the decompressed data
+        decrypted_data = Decryption(decompressed_data, private_key)
 
         return jsonify({'decryptedData': decrypted_data})
     except Exception as e:
