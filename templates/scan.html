@@ -1,9 +1,12 @@
 {% extends "base.html" %}
 {% block content %}
     <h2>Scan QR Code</h2>
-    <p>Scan a QR code using your device's camera.</p>
-    <!-- Add a video element to display the camera feed -->
-    <video id="video" width="640" height="480" autoplay></video>
-    <button onclick="startScan()">Start Scan</button>
+    <form id="qr-form">
+        <label for="qr-file">Upload QR Code Image:</label>
+        <input type="file" id="qr-file" accept="image/png" required>
+        <button type="submit">Scan</button>
+    </form>
+    <p id="qr-result"></p>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
     <script src="{{ url_for('static', filename='js/scan.js') }}"></script>
 {% endblock %}

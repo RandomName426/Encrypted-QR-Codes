@@ -4,8 +4,17 @@
     <form method="POST" action="{{ url_for('generate') }}">
         <label for="recipient">Recipient Username:</label>
         <input type="text" id="recipient" name="recipient" required>
-        <label for="data">Data:</label>
+        <label for="data">Data to Encrypt:</label>
         <input type="text" id="data" name="data" required>
         <button type="submit">Generate</button>
     </form>
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <ul>
+                {% for message in messages %}
+                    <li>{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
 {% endblock %}
