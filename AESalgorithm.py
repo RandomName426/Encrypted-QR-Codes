@@ -122,7 +122,8 @@ def decrypt_aes(message, key):
         state = subBytes(sBox, state, False)
         state = addRoundKey(state, roundKeys[10])
         decrypted.append(state)
-    paddedHex = "".join("".join(f"{byte:02x}" for byte in block) for block in decrypted)
+    decryptedData = b"".join(bytes(bytearray(block)) for block in decrypted)
+    paddedHex = "".join(f"{byte:02x}" for byte in decryptedData)
     paddingLength = int(paddedHex[-2:], 16)
     decryptedData = paddedHex[:-paddingLength*2]
     decryptedData = bytes.fromhex(decryptedData).decode('utf-8')

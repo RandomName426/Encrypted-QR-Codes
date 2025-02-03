@@ -83,7 +83,7 @@ def main(encryption, key):
         byte_key = int_key.to_bytes(16, 'big')
         arr = sBox
     else:
-        byte_key = key
+        byte_key = key.to_bytes(16, 'big')
         arr = inverseSBox
     expanded_key = key_expansion(byte_key)
     round_keys_list = round_keys(expanded_key)

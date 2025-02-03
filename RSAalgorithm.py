@@ -62,13 +62,19 @@ def rsaEncryptWithIntegrity(messageBytes, publicKey):
     try:
         integrityPadding = oaepPadding(messageBytes, hashSize, keySize)
         paddingInt = int.from_bytes(integrityPadding, byteorder="big")
+        print(f"Padding Int: {paddingInt}")
         encryptedPadding = rsaEncoding(paddingInt, publicKey)
         print(f"Encrypted Padding: {hex(encryptedPadding)}")
         print(f"MessagebytesInt: {int.from_bytes(messageBytes, byteorder='big')}")
         encryptedMessage = rsaEncoding(int.from_bytes(messageBytes, byteorder="big"), publicKey)
         print(f"Encrypted Message Int: {encryptedMessage}")
         print(f"Encrypted Message Hex : {hex(encryptedMessage)}")
+        byte = encryptedMessage.to_bytes(keySize, byteorder='big')
+        print(f"Encrypted Message Bytes: {byte}")
+        print(f"Encrypted Message Bytes to int: {int.from_bytes(byte, byteorder='big')}")
+
         return encryptedMessage.to_bytes(keySize, byteorder="big") + encryptedPadding.to_bytes(keySize, byteorder="big")
+    
     except Exception as e:
         print(f"Debug - Padding error: {e}")
         return None
@@ -79,19 +85,16 @@ def rsaDecryptWithIntegrity(encryptedData, privateKey):
         hashSize = 32
 
         encryptedMessage = encryptedData[:(keySize*2)]
-        print(f"Encrypted Message: {encryptedMessage}")
         encryptedPadding = encryptedData[(keySize*2):]
-        print(f"Encrypted Padding: {encryptedPadding}")
-        print(f"Encrypted Message: {int.from_bytes(encryptedMessage, byteorder='big')}")
-        decryptedMessage = rsaDecryption(int.from_bytes(encryptedMessage, byteorder="big"), privateKey)
-        print(f"Decrypted Message Int: {decryptedMessage}")
-        print(f"Decrypted Message Hex: {hex(decryptedMessage)}")
+        encryptedMessage = (encryptedMessage.decode('utf-8'))
+        decryptedMessage = rsaDecryption(int(encryptedMessage, 16), privateKey)
+        decryptedPadding = rsaDecryption(int(encryptedPadding, 16), privateKey)
+
         messageBytes = decryptedMessage.to_bytes((decryptedMessage.bit_length() + 7) // 8, byteorder="big")
-        print(f"Messagebytes: {messageBytes.hex()}")
-        decryptedPadding = rsaDecryption(int.from_bytes(encryptedPadding, byteorder="big"), privateKey)
         paddingBytes = decryptedPadding.to_bytes(keySize, byteorder="big")
-        print(f"Decrypted Padding: {paddingBytes}")
+
         decryptedOAEP = oaepUnpadding(paddingBytes, hashSize, keySize)
+
         if decryptedOAEP == messageBytes:
             print("Data integrity verified!")
             return messageBytes
