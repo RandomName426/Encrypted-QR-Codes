@@ -6,6 +6,17 @@
     <title>Encrypted QR Code App</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script> <!-- Add jsQR library -->
+    <script>
+        function showPopup(message) {
+            const popup = document.createElement('div');
+            popup.className = 'popup';
+            popup.innerText = message;
+            document.body.appendChild(popup);
+            setTimeout(() => {
+                popup.remove();
+            }, 3000); // 3 seconds
+        }
+    </script>
 </head>
 <body>
     <nav>
@@ -22,6 +33,15 @@
         </ul>
     </nav>
     <div class="container">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <script>
+                    {% for message in messages %}
+                        showPopup("{{ message }}");
+                    {% endfor %}
+                </script>
+            {% endif %}
+        {% endwith %}
         {% block content %}{% endblock %}
     </div>
 </body>

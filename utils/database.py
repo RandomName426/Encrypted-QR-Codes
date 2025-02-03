@@ -49,7 +49,7 @@ class Database:
         ]
         for username, email, password in accounts:
             if not self.user_exists(username):
-                public_key, private_key = KeyGenerator.main()
+                public_key, private_key = KeyGenerator.generate_keys()
                 public_key_serialized = pickle.dumps(public_key)  # Serialize the public key
                 private_key_serialized = pickle.dumps(private_key)  # Serialize the private key
                 with self.conn:
@@ -95,6 +95,53 @@ class Database:
 
     def add_group(self, leader, group_name):
         public_key, private_key = KeyGenerator.main()
+        public_key_serialized = pickle.dumps(public_key)  # Serialize the public key
+        private_key_serialized = pickle.dumps(private_key)  # Serialize the private key
+        with self.conn:
+            self.conn.execute("""
+                INSERT INTO groups (group_name, leader, public_key, private_key)
+                VALUES (?, ?, ?, ?)
+            """, (group_name, leader, public_key_serialized, private_key_serialized))
+            self.conn.execute("""
+                INSERT INTO group_members (group_name, username)
+                VALUES (?, ?)
+            """, (group_name, leader))
+
+    def get_user_groups(self, username):
+        with self.conn:
+            return [row[0] for row in self.conn.execute("""
+                SELECT group_name FROM group_members WHERE username = ?
+            """, (username,)).fetchall()]
+
+    def invite_to_group(self, group_name, username):
+        with self.conn:
+            self.conn.execute("""
+                INSERT INTO group_members (group_name, username)
+                VALUES (?, ?)
+            """, (group_name, username))
+            self.add_notification(username, f"You have been invited to join the group {group_name}")
+
+    def kick_from_group(self, group_name, username):
+        with self.conn:
+            self.conn.execute("""
+                DELETE FROM group_members WHERE group_name = ? AND username = ?
+            """, (group_name, username))
+            self.add_notification(username, f"You have been kicked from the group {group_name}")
+
+    def add_notification(self, username, notification):
+        with self.conn:
+            self.conn.execute("""
+                INSERT INTO notifications (username, notification)
+                VALUES (?, ?)
+            """, (username, notification))
+
+    def get_notifications(self, username):
+        with self.conn:
+            return [row[0] for row in self.conn.execute("""
+                SELECT notification FROM notifications WHERE username = ?
+            """, (username,)).fetchall()]
+    def add_group(self, leader, group_name):
+        public_key, private_key = KeyGenerator.generate_keys(group_name)
         public_key_serialized = pickle.dumps(public_key)  # Serialize the public key
         private_key_serialized = pickle.dumps(private_key)  # Serialize the private key
         with self.conn:

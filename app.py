@@ -46,6 +46,9 @@ def generate():
     if request.method == 'POST':
         recipient = request.form['recipient']
         data = request.form['data']
+        if not db.user_exists(recipient):
+            flash('Invalid username. Please try again.')
+            return redirect(url_for('generate'))
         public_key = db.get_public_key(recipient)
         print(f"Public Key: {public_key}")
         encrypted_data = Encryption(data, public_key)
@@ -60,14 +63,40 @@ def generate():
 def scan():
     return render_template('scan.html')
 
+@app.route('/create_group', methods=['GET', 'POST'])
+@login_required
+def create_group():
+    if request.method == 'POST':
+        group_name = request.form['group_name']
+        db.add_group(session['username'], group_name)
+        flash(f'Group {group_name} created successfully.')
+        return redirect(url_for('account'))
+    return render_template('create_group.html')
+
+@app.route('/invite_to_group', methods=['POST'])
+@login_required
+def invite_to_group():
+    group_name = request.form['group_name']
+    username = request.form['username']
+    db.invite_to_group(group_name, username)
+    flash(f'Invitation sent to {username}.')
+    return redirect(url_for('account'))
+
+@app.route('/notifications')
+@login_required
+def notifications():
+    notifications = db.get_notifications(session['username'])
+    return render_template('notifications.html', notifications=notifications)
+
 @app.route('/account')
 @login_required
 def account():
     username = session.get('username')
     if username:
         user_info = db.get_user_info(username)
+        groups = db.get_user_groups(username)
         if user_info:
-            user = {'username': user_info[0], 'email': user_info[1]}
+            user = {'username': user_info[0], 'email': user_info[1], 'groups': groups}
             return render_template('account.html', user=user)
     return "User not found", 404
 
