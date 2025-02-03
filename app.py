@@ -3,12 +3,12 @@ from utils.database import Database
 from AESalgorithm import Encryption, Decryption
 from utils.qr_code_maker import create_qr_code
 from functools import wraps
-import zlib
+import logging
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # Replace with a strong secret key
 db = Database()
-
+logging.basicConfig(level=logging.DEBUG)
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -130,22 +130,48 @@ def view_notification(notification_id):
     return redirect(url_for('notifications'))
 
 @app.route('/accept_invitation/<int:notification_id>', methods=['POST'])
-@login_required
 def accept_invitation(notification_id):
+    logging.debug(f"Received accept invitation request for notification ID: {notification_id}")
+
     notification = db.get_notification_by_id(notification_id)
-    if notification.username == session['username']:
-        db.accept_invitation(notification.group_name, session['username'])
-        db.delete_notification(notification_id)
-    return redirect(url_for('notifications'))
+    if notification is None:
+        logging.error(f"Notification not found for ID: {notification_id}")
+        return jsonify({"error": "Notification not found"}), 404
+
+    group_name = notification['group_name']
+    username = notification['username']
+
+    # Assuming you have a 'group_members' table with an 'accepted' column
+    db.conn.execute('''
+        UPDATE group_members SET accepted = 1 WHERE group_name = ? AND username = ?
+    ''', (group_name, username))
+    db.delete_notification(notification_id)
+    return jsonify({"message": "Invitation accepted successfully"})
 
 @app.route('/decline_invitation/<int:notification_id>', methods=['POST'])
-@login_required
 def decline_invitation(notification_id):
+    logging.debug(f"Received decline invitation request for notification ID: {notification_id}")
+
     notification = db.get_notification_by_id(notification_id)
-    if notification.username == session['username']:
-        db.decline_invitation(notification.group_name, session['username'])
-        db.delete_notification(notification_id)
-    return redirect(url_for('notifications'))
+    if notification is None:
+        logging.error(f"Notification not found for ID: {notification_id}")
+        return jsonify({"error": "Notification not found"}), 404
+
+    group_name = notification['group_name']
+    username = notification['username']
+
+    # Assuming you have a 'group_members' table
+    db.conn.execute('''
+        DELETE FROM group_members WHERE group_name = ? AND username = ?
+    ''', (group_name, username))
+    db.delete_notification(notification_id)
+    return jsonify({"message": "Invitation declined successfully"})
+
+@app.route('/notifications', methods=['GET'])
+def get_notifications():
+    notifications = db.get_all_notifications()
+    return jsonify(notifications)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(debug=True)
+
