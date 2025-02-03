@@ -58,35 +58,14 @@ def generate():
         return redirect(url_for('index'))
     return render_template('generate.html')
 
-@app.route('/scan')
+@app.route('/scan', methods=['GET', 'POST'])
 @login_required
 def scan():
-    return render_template('scan.html')
-
-@app.route('/create_group', methods=['GET', 'POST'])
-@login_required
-def create_group():
     if request.method == 'POST':
-        group_name = request.form['group_name']
-        db.add_group(session['username'], group_name)
-        flash(f'Group {group_name} created successfully.')
-        return redirect(url_for('account'))
-    return render_template('create_group.html')
-
-@app.route('/invite_to_group', methods=['POST'])
-@login_required
-def invite_to_group():
-    group_name = request.form['group_name']
-    username = request.form['username']
-    db.invite_to_group(group_name, username)
-    flash(f'Invitation sent to {username}.')
-    return redirect(url_for('account'))
-
-@app.route('/notifications')
-@login_required
-def notifications():
-    notifications = db.get_notifications(session['username'])
-    return render_template('notifications.html', notifications=notifications)
+        key_selection = request.form['key_selection']
+        # Implement logic for handling key selection here
+        # ...
+    return render_template('scan.html', user=session['username'], groups=db.get_user_groups(session['username']))
 
 @app.route('/account')
 @login_required
@@ -100,34 +79,73 @@ def account():
             return render_template('account.html', user=user)
     return "User not found", 404
 
-@app.route('/decode_qr', methods=['POST'])
+@app.route('/create_group', methods=['POST'])
 @login_required
-def decode_qr():
-    try:
-        # Read the QR data from the request
-        qr_data = request.data
+def create_group():
+    group_name = request.form['group_name']
+    db.add_group(session['username'], group_name)
+    flash(f'Group {group_name} created successfully.')
+    return redirect(url_for('groups'))
 
-        if not qr_data:
-            return jsonify({'error': 'No QR data provided'}), 400
+@app.route('/invite_to_group', methods=['POST'])
+@login_required
+def invite_to_group():
+    group_name = request.form['group_name']
+    username = request.form['username']
+    if not db.user_exists(username):
+        flash('Invalid username. Please try again.')
+        return redirect(url_for('groups'))
+    if not db.invite_to_group(group_name, username):
+        flash(f'User {username} is already in the group {group_name}.')
+        return redirect(url_for('groups'))
+    flash(f'Invitation sent to {username}.')
+    return redirect(url_for('groups'))
 
-        # Decompress the QR data
-        decompressed_data = zlib.decompress(qr_data)
+@app.route('/leave_group', methods=['POST'])
+@login_required
+def leave_group():
+    group_name = request.form['group_name']
+    db.leave_group(group_name, session['username'])
+    flash(f'You have left the group {group_name}.')
+    return redirect(url_for('account'))
 
-        # Retrieve the username from the session
-        username = session.get('username')
-        if not username:
-            return jsonify({'error': 'User not logged in'}), 401
+@app.route('/groups')
+@login_required
+def groups():
+    return render_template('groups.html')
 
-        # Get the private key for decryption
-        private_key = db.get_private_key(username)  # Replace with your method to get the private key
-        print(f"Private Key: {private_key}")
-        # Decrypt the decompressed data
-        decrypted_data = Decryption(decompressed_data, private_key)
+@app.route('/notifications')
+@login_required
+def notifications():
+    notifications = db.get_user_notifications(session['username'])
+    return render_template('notifications.html', notifications=notifications)
 
-        return jsonify({'decryptedData': decrypted_data})
-    except Exception as e:
-        print(f"Error decoding QR code: {e}")
-        return jsonify({'error': 'Failed to decode QR code'}), 400
+@app.route('/notifications/<int:notification_id>')
+@login_required
+def view_notification(notification_id):
+    notification = db.get_notification_by_id(notification_id)
+    if notification.username == session['username']:
+        db.delete_notification(notification_id)
+        return render_template('notifications.html', selected_notification=notification, notifications=db.get_user_notifications(session['username']))
+    return redirect(url_for('notifications'))
+
+@app.route('/accept_invitation/<int:notification_id>', methods=['POST'])
+@login_required
+def accept_invitation(notification_id):
+    notification = db.get_notification_by_id(notification_id)
+    if notification.username == session['username']:
+        db.accept_invitation(notification.group_name, session['username'])
+        db.delete_notification(notification_id)
+    return redirect(url_for('notifications'))
+
+@app.route('/decline_invitation/<int:notification_id>', methods=['POST'])
+@login_required
+def decline_invitation(notification_id):
+    notification = db.get_notification_by_id(notification_id)
+    if notification.username == session['username']:
+        db.decline_invitation(notification.group_name, session['username'])
+        db.delete_notification(notification_id)
+    return redirect(url_for('notifications'))
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

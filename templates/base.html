@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Encrypted QR Code App</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-    <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script> <!-- Add jsQR library -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
     <script>
         function showPopup(message) {
             const popup = document.createElement('div');
@@ -14,7 +14,7 @@
             document.body.appendChild(popup);
             setTimeout(() => {
                 popup.remove();
-            }, 3000); // 3 seconds
+            }, 3000);
         }
     </script>
 </head>
@@ -26,6 +26,8 @@
                 <li><a href="{{ url_for('generate') }}">Generate QR Code</a></li>
                 <li><a href="{{ url_for('scan') }}">Scan QR Code</a></li>
                 <li><a href="{{ url_for('account') }}">Account</a></li>
+                <li><a href="{{ url_for('groups') }}">Groups</a></li>
+                <li><a href="{{ url_for('notifications') }}">Notifications</a></li>
                 <li><a href="{{ url_for('logout') }}">Logout</a></li>
             {% else %}
                 <li><a href="{{ url_for('login') }}">Login</a></li>

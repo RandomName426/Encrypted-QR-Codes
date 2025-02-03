@@ -93,3 +93,18 @@ button:hover {
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     z-index: 1000;
 }
+
+.notifications-container {
+    display: flex;
+}
+
+.notifications-sidebar {
+    width: 30%;
+    border-right: 1px solid #ccc;
+    padding: 10px;
+}
+
+.notification-content {
+    width: 70%;
+    padding: 10px;
+}

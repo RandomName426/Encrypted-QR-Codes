@@ -1,12 +1,16 @@
 {% extends "base.html" %}
 {% block content %}
     <h2>Scan QR Code</h2>
-    <form id="qr-form">
-        <label for="qr-file">Upload QR Code Image:</label>
-        <input type="file" id="qr-file" accept="image/png" required>
+    <form method="POST" action="{{ url_for('scan') }}" enctype="multipart/form-data">
+        <label for="key_selection">Select Key:</label>
+        <select id="key_selection" name="key_selection">
+            <option value="{{ user }}">Profile Key</option>
+            {% for group in groups %}
+                <option value="{{ group }}">{{ group }} Key</option>
+            {% endfor %}
+        </select>
+        <label for="file">Upload QR Code:</label>
+        <input type="file" id="file" name="file" required>
         <button type="submit">Scan</button>
     </form>
-    <p id="qr-result"></p>
-    <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
-    <script src="{{ url_for('static', filename='js/scan.js') }}"></script>
 {% endblock %}

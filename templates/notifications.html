@@ -1,9 +1,24 @@
 {% extends "base.html" %}
 {% block content %}
     <h2>Notifications</h2>
-    <ul>
-        {% for notification in notifications %}
-            <li>{{ notification }}</li>
-        {% endfor %}
-    </ul>
+    <div class="notifications-container">
+        <div class="notifications-sidebar">
+            <ul>
+                {% for notification in notifications %}
+                    <li><a href="{{ url_for('view_notification', notification_id=notification.id) }}">{{ notification.message }}</a></li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="notification-content">
+            {% if selected_notification %}
+                <p>{{ selected_notification.message }}</p>
+                <form method="POST" action="{{ url_for('accept_invitation', notification_id=selected_notification.id) }}">
+                    <button type="submit">Accept</button>
+                </form>
+                <form method="POST" action="{{ url_for('decline_invitation', notification_id=selected_notification.id) }}">
+                    <button type="submit">Decline</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
 {% endblock %}
