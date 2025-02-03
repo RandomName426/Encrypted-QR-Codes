@@ -86,12 +86,15 @@ def encrypt_aes(data, key):
     originalKey = key
     roundKeys, sBox = KE.main(True, originalKey)
     messageBytes = data.encode('utf-8')
+    print(f"Message Bytes: {messageBytes}")
     paddingamount = 16 - len(messageBytes) % 16
     if paddingamount < 16:
         messageBytes += bytes([paddingamount] * paddingamount)
     chunks = chunking(messageBytes)
+    print(f"Chunks: {chunks}")
     encrypted = []
     for chunk in chunks:
+        print(f"Chunk: {chunk}")
         state = addRoundKey(chunk, roundKeys[0])
         for i in range(9):
             state = subBytes(sBox, state, True)
@@ -109,7 +112,8 @@ def decrypt_aes(message, key):
     originalKey = key
     roundKeys, sBox = KE.main(False, originalKey)
     roundKeys = roundKeys[::-1]
-    chunks = chunking(bytes.fromhex(message))
+    chunks = chunking(message)
+    print(f"Chunks: {chunks}")
     decrypted = []
     for chunk in chunks:
         state = addRoundKey(chunk, roundKeys[0])
@@ -123,29 +127,27 @@ def decrypt_aes(message, key):
         state = addRoundKey(state, roundKeys[10])
         decrypted.append(state)
     decryptedData = b"".join(bytes(bytearray(block)) for block in decrypted)
-    paddedHex = "".join(f"{byte:02x}" for byte in decryptedData)
-    paddingLength = int(paddedHex[-2:], 16)
-    decryptedData = paddedHex[:-paddingLength*2]
-    decryptedData = bytes.fromhex(decryptedData).decode('utf-8')
+    paddingLength = decryptedData[-1]
+    decryptedData = decryptedData[:-paddingLength]
+    decryptedData = decryptedData.decode('utf-8')
     return decryptedData
 
 # Functions to combine AES and RSA encryptions
 def Encryption(message, pubKey):
     aes_key = randbelow(2**128 - 2**127) + 2**127
-    print(f"Original AES Key: {aes_key}")
     originalKey, encrypted_message = encrypt_aes(message, aes_key)
     print(f"Encrypted Message: {encrypted_message}")
     encryptedKey = RSA.main(originalKey, True, pubKey)
-    print(f"Encrypted AES Key: {encryptedKey.hex()}")
-    print(f"Encrypted Data: {(encryptedKey + encrypted_message.encode('utf-8')).hex()}")
-    return encryptedKey + encrypted_message.encode('utf-8')
+    print(bytes.fromhex(encrypted_message))
+    print(f"Encrypted Data: {(encryptedKey + bytes.fromhex(encrypted_message))}")
+    return encryptedKey + bytes.fromhex(encrypted_message)
 
 def Decryption(encrypted_data, privateKey):
     print(f"Encrypted Data (key part): {encrypted_data[:2048]}")
     print(f"Encrypted Data (message part): {encrypted_data[2048:]}")
     decrytedKey = RSA.main(encrypted_data[:2048], False, privateKey)
-    print(f"Decrypted AES Key: {decrytedKey}")
-    encrypted_message = encrypted_data[2048:].decode('utf-8')
+    encrypted_message = encrypted_data[2048:]
+    encrypted_message = bytes.fromhex(encrypted_message.decode('utf-8'))
     print(f"Encrypted Message: {encrypted_message}")
     decrypted_message = decrypt_aes(encrypted_message, decrytedKey)
     print(f"Decrypted Message: {decrypted_message}")

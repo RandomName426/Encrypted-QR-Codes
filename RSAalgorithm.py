@@ -55,24 +55,14 @@ def rsaDecryption(cipherInt, privateKey):
     return pow(cipherInt, d, n)
 
 def rsaEncryptWithIntegrity(messageBytes, publicKey):
-    print(f"Messagebytes: {messageBytes.hex()}")
     keySize = (publicKey[1].bit_length() + 7) // 8
     hashSize = 32 
 
     try:
         integrityPadding = oaepPadding(messageBytes, hashSize, keySize)
         paddingInt = int.from_bytes(integrityPadding, byteorder="big")
-        print(f"Padding Int: {paddingInt}")
         encryptedPadding = rsaEncoding(paddingInt, publicKey)
-        print(f"Encrypted Padding: {hex(encryptedPadding)}")
-        print(f"MessagebytesInt: {int.from_bytes(messageBytes, byteorder='big')}")
         encryptedMessage = rsaEncoding(int.from_bytes(messageBytes, byteorder="big"), publicKey)
-        print(f"Encrypted Message Int: {encryptedMessage}")
-        print(f"Encrypted Message Hex : {hex(encryptedMessage)}")
-        byte = encryptedMessage.to_bytes(keySize, byteorder='big')
-        print(f"Encrypted Message Bytes: {byte}")
-        print(f"Encrypted Message Bytes to int: {int.from_bytes(byte, byteorder='big')}")
-
         return encryptedMessage.to_bytes(keySize, byteorder="big") + encryptedPadding.to_bytes(keySize, byteorder="big")
     
     except Exception as e:
