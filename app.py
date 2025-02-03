@@ -167,10 +167,6 @@ def decline_invitation(notification_id):
     db.delete_notification(notification_id)
     return jsonify({"message": "Invitation declined successfully"})
 
-@app.route('/notifications', methods=['GET'])
-def get_notifications():
-    notifications = db.get_all_notifications()
-    return jsonify(notifications)
 
 if __name__ == '__main__':
     app.run(debug=True)

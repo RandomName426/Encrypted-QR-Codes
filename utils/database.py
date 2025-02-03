@@ -171,6 +171,13 @@ class Database:
             result = self.conn.execute('SELECT * FROM notifications').fetchall()
             return [dict(row) for row in result]
 
+    def get_user_notifications(self, username):
+        with self.conn:
+            result = self.conn.execute('''
+                SELECT * FROM notifications WHERE username = ?
+            ''', (username,)).fetchall()
+            return [dict(row) for row in result]
+
     def accept_invitation(self, group_name, username):
         with self.conn:
             self.conn.execute('''
