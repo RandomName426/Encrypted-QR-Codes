@@ -86,15 +86,12 @@ def encrypt_aes(data, key):
     originalKey = key
     roundKeys, sBox = KE.main(True, originalKey)
     messageBytes = data.encode('utf-8')
-    print(f"Message Bytes: {messageBytes}")
-    paddingamount = 16 - len(messageBytes) % 16
-    if paddingamount < 16:
-        messageBytes += bytes([paddingamount] * paddingamount)
+
+    paddingamount = 16 - (len(messageBytes)) % 16
+    messageBytes += bytes([paddingamount] * paddingamount)
     chunks = chunking(messageBytes)
-    print(f"Chunks: {chunks}")
     encrypted = []
     for chunk in chunks:
-        print(f"Chunk: {chunk}")
         state = addRoundKey(chunk, roundKeys[0])
         for i in range(9):
             state = subBytes(sBox, state, True)
@@ -113,7 +110,6 @@ def decrypt_aes(message, key):
     roundKeys, sBox = KE.main(False, originalKey)
     roundKeys = roundKeys[::-1]
     chunks = chunking(message)
-    print(f"Chunks: {chunks}")
     decrypted = []
     for chunk in chunks:
         state = addRoundKey(chunk, roundKeys[0])
@@ -136,19 +132,15 @@ def decrypt_aes(message, key):
 def Encryption(message, pubKey):
     aes_key = randbelow(2**128 - 2**127) + 2**127
     originalKey, encrypted_message = encrypt_aes(message, aes_key)
-    print(f"Encrypted Message: {encrypted_message}")
     encryptedKey = RSA.main(originalKey, True, pubKey)
     print(bytes.fromhex(encrypted_message))
-    print(f"Encrypted Data: {(encryptedKey + bytes.fromhex(encrypted_message))}")
+
     return encryptedKey + bytes.fromhex(encrypted_message)
 
 def Decryption(encrypted_data, privateKey):
-    print(f"Encrypted Data (key part): {encrypted_data[:2048]}")
-    print(f"Encrypted Data (message part): {encrypted_data[2048:]}")
+
     decrytedKey = RSA.main(encrypted_data[:2048], False, privateKey)
     encrypted_message = encrypted_data[2048:]
     encrypted_message = bytes.fromhex(encrypted_message.decode('utf-8'))
-    print(f"Encrypted Message: {encrypted_message}")
     decrypted_message = decrypt_aes(encrypted_message, decrytedKey)
-    print(f"Decrypted Message: {decrypted_message}")
     return decrypted_message
