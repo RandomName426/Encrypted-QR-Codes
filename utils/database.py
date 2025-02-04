@@ -1,11 +1,11 @@
 import sqlite3
-import KeyGenerator
 import pickle
 import logging
+import KeyGenerator  # Assuming you have a KeyGenerator module
 
 class Database:
-    def __init__(self):
-        self.conn = sqlite3.connect('database.db', check_same_thread=False)  # Ensure this matches your database file name
+    def __init__(self, db_file='database.db'):
+        self.conn = sqlite3.connect(db_file, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
         self.init_db()
 
@@ -29,6 +29,15 @@ class Database:
                 private_key BLOB NOT NULL
             )
             ''')
+
+            # Alter groups table to add leader column if it does not exist
+            try:
+                self.conn.execute('ALTER TABLE groups ADD COLUMN leader TEXT')
+            except sqlite3.OperationalError as e:
+                if 'duplicate column name: leader' in str(e):
+                    pass  # Column already exists
+                else:
+                    raise
 
             # Create group_members table with accepted column if not exists
             self.conn.execute('''
@@ -57,6 +66,7 @@ class Database:
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT,
                 message TEXT,
+                group_name TEXT,
                 FOREIGN KEY (username) REFERENCES users (username)
             )
             ''')
@@ -81,28 +91,14 @@ class Database:
                         VALUES (?, ?, ?, ?, ?)
                     ''', (username, email, password, public_key_serialized, private_key_serialized))
 
-
-
-    def add_premade_accounts(self):
-        accounts = [
-            ("user1", "user1@example.com", "password1"),
-            ("user2", "user2@example.com", "password2"),
-            ("admin", "admin@example.com", "admin")
-        ]
-        for username, email, password in accounts:
-            if not self.user_exists(username):
-                public_key, private_key = KeyGenerator.generate_keys(username)
-                public_key_serialized = pickle.dumps(public_key)
-                private_key_serialized = pickle.dumps(private_key)
-                with self.conn:
-                    self.conn.execute('''
-                        INSERT INTO users (username, email, password, public_key, private_key)
-                        VALUES (?, ?, ?, ?, ?)
-                    ''', (username, email, password, public_key_serialized, private_key_serialized))
-
     def user_exists(self, username):
         with self.conn:
             result = self.conn.execute('SELECT 1 FROM users WHERE username = ?', (username,)).fetchone()
+            return result is not None
+
+    def group_exists(self, group_name):
+        with self.conn:
+            result = self.conn.execute('SELECT 1 FROM groups WHERE group_name = ?', (group_name,)).fetchone()
             return result is not None
 
     def get_user_info(self, username):
@@ -122,29 +118,42 @@ class Database:
             private_key_serialized = self.conn.execute('SELECT private_key FROM users WHERE username = ?', (username,)).fetchone()[0]
             return pickle.loads(private_key_serialized)
         
+    def get_group_public_key(self, group_name):
+        with self.conn:
+            public_key_serialized = self.conn.execute('''
+                SELECT private_key FROM groups WHERE group_name = ?
+            ''', (group_name,)).fetchone()[0]
+            return pickle.loads(public_key_serialized)
+
     def validate_user(self, username, password):
         with self.conn:
             result = self.conn.execute('SELECT * FROM users WHERE username = ? AND password = ?', (username, password)).fetchone()
             return result is not None
 
     def add_group(self, leader, group_name):
-        public_key, private_key = KeyGenerator.generate_keys(group_name)
-        public_key_serialized = pickle.dumps(public_key)
-        private_key_serialized = pickle.dumps(private_key)
         with self.conn:
             self.conn.execute('''
-                INSERT INTO groups (group_name, leader, public_key, private_key)
-                VALUES (?, ?, ?, ?)
-            ''', (group_name, leader, public_key_serialized, private_key_serialized))
+            INSERT INTO groups (group_name, private_key, leader)
+            VALUES (?, ?, ?)
+            ''', (group_name, pickle.dumps(KeyGenerator.generate_keys(group_name)[0]), leader))
+            
+            # Add the leader to the group_members table
             self.conn.execute('''
-                INSERT INTO group_members (group_name, username, accepted)
-                VALUES (?, ?, 1)
-            ''', (group_name, leader))
+            INSERT INTO group_members (username, group_name, accepted)
+            VALUES (?, ?, ?)
+            ''', (leader, group_name, 1))
 
-    def group_exists(self, group_name):
+    def add_user_to_group(self, username, group_name):
+        if not self.user_exists(username):
+            raise ValueError(f"User {username} does not exist")
+        if not self.group_exists(group_name):
+            raise ValueError(f"Group {group_name} does not exist")
+
         with self.conn:
-            result = self.conn.execute('SELECT 1 FROM groups WHERE group_name = ?', (group_name,)).fetchone()
-            return result is not None
+            self.conn.execute('''
+            INSERT INTO group_members (username, group_name, accepted)
+            VALUES (?, ?, ?)
+            ''', (username, group_name, 1))
 
     def get_user_groups(self, username):
         with self.conn:
@@ -159,7 +168,7 @@ class Database:
             ''').fetchall()]
 
     def invite_to_group(self, group_name, username):
-        if self.is_user_in_group(group_name, username):
+        if self.is_user_in_group(username, group_name):
             return False
         with self.conn:
             self.conn.execute('''
@@ -182,13 +191,6 @@ class Database:
             self.conn.execute('''
                 DELETE FROM group_members WHERE group_name = ? AND username = ?
             ''', (group_name, username))
-
-    def get_group_public_key(self, group_name):
-        with self.conn:
-            public_key_serialized = self.conn.execute('''
-                SELECT public_key FROM groups WHERE group_name = ?
-            ''', (group_name,)).fetchone()[0]
-            return pickle.loads(public_key_serialized)
 
     def get_group_private_key(self, group_name):
         with self.conn:
@@ -224,8 +226,8 @@ class Database:
 
     def get_user_notifications(self, username):
         with self.conn:
-            result = self.conn.execute('SELECT message FROM notifications WHERE username = ?', (username,)).fetchall()
-            return [row['message'] for row in result]
+            result = self.conn.execute('SELECT * FROM notifications WHERE username = ?', (username,)).fetchall()
+            return [dict(row) for row in result]
 
     def accept_invitation(self, group_name, username):
         with self.conn:

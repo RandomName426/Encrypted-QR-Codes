@@ -101,12 +101,21 @@ def account():
 @login_required
 def create_group():
     group_name = request.form['group_name']
-    if db.group_exists(group_name):
-        flash(f'Group {group_name} already exists.')
-        return redirect(url_for('groups'))
     db.add_group(session['username'], group_name)
-    flash(f'Group {group_name} created successfully.')
-    return redirect(url_for('groups'))
+    flash('Group created successfully!', 'success')
+    return redirect(url_for('index'))
+
+@app.route('/add_user_to_group', methods=['POST'])
+@login_required
+def add_user_to_group():
+    username = request.form['username']
+    group_name = request.form['group_name']
+    try:
+        db.add_user_to_group(username, group_name)
+        flash('User added to group successfully!', 'success')
+    except ValueError as e:
+        flash(str(e), 'danger')
+    return redirect(url_for('index'))
 
 @app.route('/invite_to_group', methods=['POST'])
 @login_required
