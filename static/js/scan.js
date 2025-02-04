@@ -23,7 +23,8 @@ document.getElementById('qr-form').addEventListener('submit', function(event) {
                 const code = jsQR(imageData.data, canvas.width, canvas.height);
                 if (code) {
                     const qrData = code.binaryData;  // Use binaryData to get raw bytes
-                    console.log("Extracted QR Data (raw bytes):", qrData);  // Debug statement
+                    const base64QrData = btoa(String.fromCharCode.apply(null, qrData));
+                    console.log("Extracted QR Data (Base64):", base64QrData);  // Debug statement
 
                     fetch('/decode_qr', {
                         method: 'POST',
@@ -31,7 +32,7 @@ document.getElementById('qr-form').addEventListener('submit', function(event) {
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({ 
-                            qrData: Array.from(qrData), 
+                            qrData: base64QrData, 
                             key_selection: keySelection 
                         })
                     })

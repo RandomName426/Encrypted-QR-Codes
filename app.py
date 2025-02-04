@@ -265,16 +265,43 @@ def decode_qr():
         logging.error(f"Error decoding QR code: {e}")
         return jsonify({'error': str(e)}), 500
     
-@app.route('/decode_qr', methods=['POST'])
-def decode_qr_endpoint():
-    key_selection = request.form['key_selection']
-    qr_code_file = request.files['qr_code']
-    qr_code_content = qr_code_file.read()
+# @app.route('/decode_qr', methods=['POST'])
+# @login_required
+# def decode_qr_endpoint():
+#     key_selection = request.form['key_selection']
+#     qr_code_file = request.files['qr_code']
+#     qr_code_content = qr_code_file.read()
     
-    try:
-        decrypted_data = decode_qr(qr_code_content, key_selection)  # Use your existing decode_qr function
-        return jsonify({'decryptedData': decrypted_data})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
+#     try:
+#         # Decompress the QR data
+#         try:
+#             decompressed_data = zlib.decompress(qr_code_content)
+#         except zlib.error as e:
+#             logging.error(f"Decompression error: {e}")
+#             return jsonify({'error': 'Decompression error'}), 400
+
+#         # Determine if the key selection is a user or a group
+#         if key_selection == session['username']:
+#             private_key = db.get_private_key(session['username'])
+#         elif db.group_exists(key_selection):
+#             private_key = db.get_group_private_key(key_selection)
+#         else:
+#             return jsonify({'error': 'Invalid key selection'}), 400
+
+#         # Debugging information
+#         logging.debug(f"Private Key: {private_key}")
+
+#         # Decrypt the decompressed data
+#         try:
+#             decrypted_data = Decryption(decompressed_data, private_key)
+#         except Exception as e:
+#             logging.error(f"Decryption error: {e}")
+#             return jsonify({'error': 'Decryption error'}), 400
+
+#         return jsonify({'decryptedData': decrypted_data})
+#     except Exception as e:
+#         logging.error(f"Error decoding QR code: {e}")
+#         return jsonify({'error': str(e)}), 500
+    
 if __name__ == '__main__':
     app.run(debug=True)
