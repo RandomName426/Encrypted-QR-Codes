@@ -66,10 +66,15 @@ def generate():
         return redirect(url_for('index'))
     return render_template('generate.html')
 
-@app.route('/scan', methods=['GET', 'POST'])
+@app.route('/scan')
 @login_required
 def scan():
-    return render_template('scan.html', user=db.get_user_info(session['username']))
+    username = session['username']
+    user_info = db.get_user_info(username)
+    user_private_keys = [db.get_private_key(username)]  # Fetch the user's private key
+    user_groups = db.get_user_groups(username)
+    group_private_keys = {group: db.get_group_private_key(group) for group in user_groups}
+    return render_template('scan.html', user=user_info, user_keys=user_private_keys, group_keys=group_private_keys)
 
 @app.route('/account', methods=['GET'])
 @login_required
@@ -259,5 +264,17 @@ def decode_qr():
     except Exception as e:
         logging.error(f"Error decoding QR code: {e}")
         return jsonify({'error': str(e)}), 500
+    
+@app.route('/decode_qr', methods=['POST'])
+def decode_qr_endpoint():
+    key_selection = request.form['key_selection']
+    qr_code_file = request.files['qr_code']
+    qr_code_content = qr_code_file.read()
+    
+    try:
+        decrypted_data = decode_qr(qr_code_content, key_selection)  # Use your existing decode_qr function
+        return jsonify({'decryptedData': decrypted_data})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
 if __name__ == '__main__':
     app.run(debug=True)

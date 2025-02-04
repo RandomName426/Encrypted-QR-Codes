@@ -1,27 +1,92 @@
 {% extends "base.html" %}
 
-{% block title %}Scan QR Code{% endblock %}
-
 {% block content %}
 <div class="container mt-4">
-    <h2>Scan QR Code</h2>
-    <form id="qr-form">
+    <h1>Scan QR Code</h1>
+    <form id="qr-form" method="post" enctype="multipart/form-data">
         <div class="form-group">
-            <label for="key_selection">Select Key Set</label>
+            <label for="key_selection">Select Key</label>
             <select class="form-control" id="key_selection" name="key_selection">
-                <option value="{{ user.username }}">Personal Key</option>
-                {% for group in user.groups %}
-                    <option value="{{ group }}">{{ group }}</option>
-                {% endfor %}
+                <optgroup label="Your Keys">
+                    {% for key in user_keys %}
+                    <option value="{{ key }}">{{ key }}</option>
+                    {% endfor %}
+                </optgroup>
+                <optgroup label="Group Keys">
+                    {% for group, key in group_keys.items() %}
+                    <option value="{{ key }}">{{ group }}</option>
+                    {% endfor %}
+                </optgroup>
             </select>
         </div>
         <div class="form-group">
-            <label for="qr-file">Upload QR Code Image:</label>
-            <input type="file" id="qr-file" accept="image/png" required>
+            <label for="qr-file">Upload QR Code</label>
+            <input type="file" class="form-control" id="qr-file" name="qr_code">
         </div>
-        <button type="submit" class="btn btn-primary">Scan</button>
+        <button type="submit" class="btn btn-primary">Decrypt</button>
     </form>
-    <p id="qr-result"></p>
-    <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
-    <script src="{{ url_for('static', filename='js/scan.js') }}"></script>
+    <div id="qr-result"></div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
+<script>
+document.getElementById('qr-form').addEventListener('submit', function(event) {
+    event.preventDefault();
+    const fileInput = document.getElementById('qr-file');
+    const file = fileInput.files[0];
+    const keySelection = document.getElementById('key_selection').value;
+
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            console.log("FileReader onload triggered");  // Debug statement
+            const image = new Image();
+            image.onload = function() {
+                console.log("Image onload triggered");  // Debug statement
+                const canvas = document.createElement('canvas');
+                canvas.width = image.width;
+                canvas.height = image.height;
+                console.log(`Image dimensions: ${image.width}x${image.height}`);  // Log image dimensions
+                const context = canvas.getContext('2d');
+                context.drawImage(image, 0, 0);
+                const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                console.log(`Image data: width=${imageData.width}, height=${imageData.height}`);  // Debug statement
+
+                const code = jsQR(imageData.data, canvas.width, canvas.height);
+                if (code) {
+                    const qrData = code.binaryData;  // Use binaryData to get raw bytes
+                    console.log("Extracted QR Data (raw bytes):", qrData);  // Debug statement
+
+                    // Construct form data to mimic form submission
+                    const formData = new FormData();
+                    formData.append('qr_code', new Blob([qrData], { type: 'application/octet-stream' }));
+                    formData.append('key_selection', keySelection);
+
+                    fetch('/decode_qr', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.decryptedData) {
+                            document.getElementById('qr-result').textContent = `Decoded Data: ${data.decryptedData}`;
+                        } else {
+                            document.getElementById('qr-result').textContent = `Error: ${data.error}`;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error decoding QR code:', error);
+                        document.getElementById('qr-result').textContent = 'Error decoding QR code.';
+                    });
+                } else {
+                    document.getElementById('qr-result').textContent = 'No QR code found.';
+                }
+            };
+            image.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    } else {
+        document.getElementById('qr-result').textContent = 'No file selected.';
+    }
+});
+</script>
 {% endblock %}
