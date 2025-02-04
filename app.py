@@ -3,6 +3,7 @@ from utils.database import Database
 from AESalgorithm import Encryption, Decryption
 from utils.qr_code_maker import create_qr_code
 from functools import wraps
+import zlib
 import logging
 
 app = Flask(__name__)
@@ -194,24 +195,46 @@ def decline_invitation(notification_id):
 
 @app.route('/decode_qr', methods=['POST'])
 @login_required
-@login_required
 def decode_qr():
-    data = request.get_json()
-    qr_data = bytes(data['qrData'])
-    key_selection = data['key_selection']
+    try:
+        data = request.get_json()
+        qr_data = bytes(data['qrData'])
+        key_selection = data['key_selection']
+        # Debugging information
+        logging.debug(f"QR Data: {qr_data}")
+        logging.debug(f"Key Selection: {key_selection}")
 
-    # Determine if the key selection is a user or a group
-    if key_selection == session['username']:
-        private_key = db.get_private_key(session['username'])
-    elif db.group_exists(key_selection):
-        private_key = db.get_group_private_key(key_selection)
-    else:
-        return jsonify({'error': 'Invalid key selection'}), 400
+        if not qr_data:
+            return jsonify({'error': 'No QR data provided'}), 400
 
-    decrypted_message = Decryption(qr_data, private_key)
-    decrypted_message = decrypted_message.decode('utf-8')
-    
-    return jsonify({'decryptedData': decrypted_message})
+        # Decompress the QR data
+        try:
+            decompressed_data = zlib.decompress(qr_data)
+        except zlib.error as e:
+            logging.error(f"Decompression error: {e}")
+            return jsonify({'error': 'Decompression error'}), 400
+        print(decompressed_data)
+        # Determine if the key selection is a user or a group
+        if key_selection == session['username']:
+            private_key = db.get_private_key(session['username'])
+        elif db.group_exists(key_selection):
+            private_key = db.get_group_private_key(key_selection)
+        else:
+            return jsonify({'error': 'Invalid key selection'}), 400
 
+        # Debugging information
+        logging.debug(f"Private Key: {private_key}")
+
+        # Decrypt the decompressed data
+        try:
+            decrypted_data = Decryption(decompressed_data, private_key)
+        except Exception as e:
+            logging.error(f"Decryption error: {e}")
+            return jsonify({'error': 'Decryption error'}), 400
+
+        return jsonify({'decryptedData': decrypted_data})
+    except Exception as e:
+        logging.error(f"Error decoding QR code: {e}")
+        return jsonify({'error': str(e)}), 500
 if __name__ == '__main__':
     app.run(debug=True)

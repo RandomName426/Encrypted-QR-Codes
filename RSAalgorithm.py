@@ -63,6 +63,8 @@ def rsaEncryptWithIntegrity(messageBytes, publicKey):
         paddingInt = int.from_bytes(integrityPadding, byteorder="big")
         encryptedPadding = rsaEncoding(paddingInt, publicKey)
         encryptedMessage = rsaEncoding(int.from_bytes(messageBytes, byteorder="big"), publicKey)
+        print(f"Debug - Encrypted message: {encryptedMessage}")
+        print(f"Debug - Encrypted padding: {encryptedPadding}")
         return encryptedMessage.to_bytes(keySize, byteorder="big") + encryptedPadding.to_bytes(keySize, byteorder="big")
     
     except Exception as e:
@@ -76,8 +78,10 @@ def rsaDecryptWithIntegrity(encryptedData, privateKey):
 
         encryptedMessage = encryptedData[:(keySize*2)]
         encryptedPadding = encryptedData[(keySize*2):]
-        decryptedMessage = rsaDecryption(int.from_bytes(encryptedMessage, "big"), privateKey)
-        decryptedPadding = rsaDecryption(int.from_bytes(encryptedPadding, "big" ), privateKey)
+        encryptedMessage = (encryptedMessage.decode('utf-8'))
+        encryptedPadding = (encryptedPadding.decode('utf-8'))
+        decryptedMessage = rsaDecryption(int(encryptedMessage, 16), privateKey)
+        decryptedPadding = rsaDecryption(int(encryptedPadding, 16), privateKey)
 
         messageBytes = decryptedMessage.to_bytes((decryptedMessage.bit_length() + 7) // 8, byteorder="big")
         paddingBytes = decryptedPadding.to_bytes(keySize, byteorder="big")

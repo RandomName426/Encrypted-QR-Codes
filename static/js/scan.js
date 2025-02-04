@@ -7,14 +7,18 @@ document.getElementById('qr-form').addEventListener('submit', function(event) {
     if (file) {
         const reader = new FileReader();
         reader.onload = function(e) {
+            console.log("FileReader onload triggered");  // Debug statement
             const image = new Image();
             image.onload = function() {
+                console.log("Image onload triggered");  // Debug statement
                 const canvas = document.createElement('canvas');
                 canvas.width = image.width;
                 canvas.height = image.height;
+                console.log(`Image dimensions: ${image.width}x${image.height}`);  // Log image dimensions
                 const context = canvas.getContext('2d');
                 context.drawImage(image, 0, 0);
                 const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                console.log(`Image data: width=${imageData.width}, height=${imageData.height}`);  // Debug statement
 
                 const code = jsQR(imageData.data, canvas.width, canvas.height);
                 if (code) {
