@@ -3,6 +3,7 @@ from utils.database import Database
 from AESalgorithm import Encryption, Decryption
 from utils.qr_code_maker import create_qr_code
 from functools import wraps
+import pickle
 import zlib
 import logging
 
@@ -101,13 +102,16 @@ def account():
         logging.error(f"Error loading account page: {e}")
         flash('An error occurred while loading your account information', 'danger')
         return redirect(url_for('index'))
-
+    
 @app.route('/create_group', methods=['POST'])
 @login_required
 def create_group():
     group_name = request.form['group_name']
-    db.add_group(session['username'], group_name)
-    flash('Group created successfully!', 'success')
+    try:
+        db.add_group(session['username'], group_name)
+        flash('Group created successfully!', 'success')
+    except Exception as e:
+        flash(f'Error creating group: {e}', 'danger')
     return redirect(url_for('index'))
 
 @app.route('/add_user_to_group', methods=['POST'])
@@ -225,33 +229,41 @@ def decline_invitation(notification_id):
 @login_required
 def decode_qr():
     try:
-        data = request.get_json()
-        qr_data = bytes(data['qrData'])
-        key_selection = data['key_selection']
-        # Debugging information
-        logging.debug(f"QR Data: {qr_data}")
+        key_selection = request.form['key_selection']
+        qr_code_file = request.files['qr_code']
+        qr_code_content = qr_code_file.read()
+
         logging.debug(f"Key Selection: {key_selection}")
 
-        if not qr_data:
-            return jsonify({'error': 'No QR data provided'}), 400
+        # Check if key_selection matches a user or a group
+        private_key_serialized = None
+        if key_selection == session['username']:
+            private_key_serialized = db.get_private_key(session['username'])
+            logging.debug(f"Using user's private key for: {key_selection}")
+        elif db.group_exists(key_selection):
+            private_key_serialized = db.get_group_private_key(key_selection)
+            logging.debug(f"Using group's private key for: {key_selection}")
+        else:
+            logging.error(f"Invalid key selection: {key_selection}")
+            return jsonify({'error': 'Invalid key selection'}), 400
+
+        if private_key_serialized is None:
+            logging.error(f"Private key not found for: {key_selection}")
+            return jsonify({'error': 'Private key not found'}), 400
+
+        # Deserialize the private key
+        try:
+            private_key = pickle.loads(private_key_serialized)
+        except Exception as e:
+            logging.error(f"Error deserializing private key: {e}")
+            return jsonify({'error': 'Error deserializing private key'}), 400
 
         # Decompress the QR data
         try:
-            decompressed_data = zlib.decompress(qr_data)
+            decompressed_data = zlib.decompress(qr_code_content)
         except zlib.error as e:
             logging.error(f"Decompression error: {e}")
             return jsonify({'error': 'Decompression error'}), 400
-        print(decompressed_data)
-        # Determine if the key selection is a user or a group
-        if key_selection == session['username']:
-            private_key = db.get_private_key(session['username'])
-        elif db.group_exists(key_selection):
-            private_key = db.get_group_private_key(key_selection)
-        else:
-            return jsonify({'error': 'Invalid key selection'}), 400
-
-        # Debugging information
-        logging.debug(f"Private Key: {private_key}")
 
         # Decrypt the decompressed data
         try:

@@ -23,22 +23,24 @@ document.getElementById('qr-form').addEventListener('submit', function(event) {
                 const code = jsQR(imageData.data, canvas.width, canvas.height);
                 if (code) {
                     const qrData = code.binaryData;  // Use binaryData to get raw bytes
-                    const base64QrData = btoa(String.fromCharCode.apply(null, qrData));
-                    console.log("Extracted QR Data (Base64):", base64QrData);  // Debug statement
+                    console.log("Extracted QR Data (raw bytes):", qrData);  // Debug statement
+
+                    // Construct form data to mimic form submission
+                    const formData = new FormData();
+                    formData.append('qr_code', new Blob([new Uint8Array(qrData)], { type: 'application/octet-stream' }));
+                    formData.append('key_selection', keySelection);
 
                     fetch('/decode_qr', {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ 
-                            qrData: base64QrData, 
-                            key_selection: keySelection 
-                        })
+                        body: formData
                     })
                     .then(response => response.json())
                     .then(data => {
-                        document.getElementById('qr-result').textContent = `Decoded Data: ${data.decryptedData}`;
+                        if (data.decryptedData) {
+                            document.getElementById('qr-result').textContent = `Decoded Data: ${data.decryptedData}`;
+                        } else {
+                            document.getElementById('qr-result').textContent = `Error: ${data.error}`;
+                        }
                     })
                     .catch(error => {
                         console.error('Error decoding QR code:', error);

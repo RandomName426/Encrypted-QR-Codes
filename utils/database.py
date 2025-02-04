@@ -26,20 +26,13 @@ class Database:
             self.conn.execute('''
             CREATE TABLE IF NOT EXISTS groups (
                 group_name TEXT PRIMARY KEY,
-                private_key BLOB NOT NULL
+                public_key BLOB NOT NULL,
+                private_key BLOB NOT NULL,
+                leader TEXT
             )
             ''')
 
-            # Alter groups table to add leader column if it does not exist
-            try:
-                self.conn.execute('ALTER TABLE groups ADD COLUMN leader TEXT')
-            except sqlite3.OperationalError as e:
-                if 'duplicate column name: leader' in str(e):
-                    pass  # Column already exists
-                else:
-                    raise
-
-            # Create group_members table with accepted column if not exists
+            # Create group_members table
             self.conn.execute('''
             CREATE TABLE IF NOT EXISTS group_members (
                 username TEXT,
@@ -50,15 +43,6 @@ class Database:
                 PRIMARY KEY (username, group_name)
             )
             ''')
-
-            # Alter group_members table to add accepted column if it does not exist
-            try:
-                self.conn.execute('ALTER TABLE group_members ADD COLUMN accepted INTEGER DEFAULT 0')
-            except sqlite3.OperationalError as e:
-                if 'duplicate column name: accepted' in str(e):
-                    pass  # Column already exists
-                else:
-                    raise
 
             # Create notifications table
             self.conn.execute('''
@@ -99,6 +83,7 @@ class Database:
     def group_exists(self, group_name):
         with self.conn:
             result = self.conn.execute('SELECT 1 FROM groups WHERE group_name = ?', (group_name,)).fetchone()
+            logging.debug(f"group_exists({group_name}): {result}")
             return result is not None
 
     def get_user_info(self, username):
@@ -115,15 +100,18 @@ class Database:
 
     def get_private_key(self, username):
         with self.conn:
-            private_key_serialized = self.conn.execute('SELECT private_key FROM users WHERE username = ?', (username,)).fetchone()[0]
-            return pickle.loads(private_key_serialized)
+            result = self.conn.execute('SELECT private_key FROM users WHERE username = ?', (username,)).fetchone()
+            if result:
+                return result[0]  # This ensures only the private_key column is returned
+            return None
         
     def get_group_public_key(self, group_name):
         with self.conn:
-            public_key_serialized = self.conn.execute('''
-                SELECT private_key FROM groups WHERE group_name = ?
-            ''', (group_name,)).fetchone()[0]
-            return pickle.loads(public_key_serialized)
+            result = self.conn.execute('SELECT public_key FROM groups WHERE group_name = ?', (group_name,)).fetchone()
+            if result:
+                public_key_serialized = result[0]
+                return pickle.loads(public_key_serialized)
+            return None
 
     def validate_user(self, username, password):
         with self.conn:
@@ -131,17 +119,29 @@ class Database:
             return result is not None
 
     def add_group(self, leader, group_name):
-        with self.conn:
-            self.conn.execute('''
-            INSERT INTO groups (group_name, private_key, leader)
-            VALUES (?, ?, ?)
-            ''', (group_name, pickle.dumps(KeyGenerator.generate_keys(group_name)[0]), leader))
-            
-            # Add the leader to the group_members table
-            self.conn.execute('''
-            INSERT INTO group_members (username, group_name, accepted)
-            VALUES (?, ?, ?)
-            ''', (leader, group_name, 1))
+        try:
+            # Generate keys for the group
+            public_key, private_key = KeyGenerator.generate_keys(group_name)
+
+            # Serialize the keys using pickle
+            public_key_serialized = pickle.dumps(public_key)
+            private_key_serialized = pickle.dumps(private_key)
+
+            with self.conn:
+                # Insert the group into the groups table
+                self.conn.execute('''
+                INSERT INTO groups (group_name, public_key, private_key, leader)
+                VALUES (?, ?, ?, ?)
+                ''', (group_name, public_key_serialized, private_key_serialized, leader))
+
+                # Add the leader to the group_members table
+                self.conn.execute('''
+                INSERT INTO group_members (username, group_name, accepted)
+                VALUES (?, ?, ?)
+                ''', (leader, group_name, 1))
+        except Exception as e:
+            logging.error(f"Error adding group: {e}")
+            raise
 
     def add_user_to_group(self, username, group_name):
         if not self.user_exists(username):
@@ -160,7 +160,7 @@ class Database:
             return [row[0] for row in self.conn.execute('''
                 SELECT group_name FROM group_members WHERE username = ? AND accepted = 1
             ''', (username,)).fetchall()]
-
+            
     def get_all_groups(self):
         with self.conn:
             return [row['group_name'] for row in self.conn.execute('''
@@ -194,8 +194,10 @@ class Database:
 
     def get_group_private_key(self, group_name):
         with self.conn:
-            private_key_serialized = self.conn.execute('SELECT private_key FROM groups WHERE group_name = ?', (group_name,)).fetchone()[0]
-            return pickle.loads(private_key_serialized)
+            result = self.conn.execute('SELECT private_key FROM groups WHERE group_name = ?', (group_name,)).fetchone()
+            if result:
+                return result[0]  # This ensures only the private_key column is returned
+            return None
 
     def add_notification(self, username, message, group_name=None):
         with self.conn:

@@ -103,6 +103,7 @@ def encrypt_aes(data, key):
         state = addRoundKey(state, roundKeys[10])
         encrypted.append(state)
     encryptedHex = "".join("".join(f"{byte:02x}" for byte in block) for block in encrypted)
+    print(f"encryptedHex: {encryptedHex}")
     return originalKey, encryptedHex
 
 def decrypt_aes(message, key):
