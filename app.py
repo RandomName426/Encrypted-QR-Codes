@@ -67,15 +67,12 @@ def generate():
         return redirect(url_for('index'))
     return render_template('generate.html')
 
-@app.route('/scan')
+@app.route('/scan', methods=['GET'])
 @login_required
 def scan():
     username = session['username']
-    user_info = db.get_user_info(username)
-    user_private_keys = [db.get_private_key(username)]  # Fetch the user's private key
     user_groups = db.get_user_groups(username)
-    group_private_keys = {group: db.get_group_private_key(group) for group in user_groups}
-    return render_template('scan.html', user=user_info, user_keys=user_private_keys, group_keys=group_private_keys)
+    return render_template('scan.html', username=username, user_groups=user_groups)
 
 @app.route('/account', methods=['GET'])
 @login_required

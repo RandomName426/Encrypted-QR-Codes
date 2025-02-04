@@ -8,12 +8,12 @@
             <label for="key_selection">Select Key</label>
             <select class="form-control" id="key_selection" name="key_selection">
                 <optgroup label="Your Keys">
-                    {% for key in user_keys %}
-                    <option value="{{ key }}">{{ key }}</option>
-                    {% endfor %}
+                    <!-- Display username instead of actual key -->
+                    <option value="{{ username }}">{{ username }}</option>
                 </optgroup>
                 <optgroup label="Group Keys">
-                    {% for group, key in group_keys.items() %}
+                    {% for group in user_groups %}
+                    <!-- Display group name instead of actual key -->
                     <option value="{{ group }}">{{ group }}</option>
                     {% endfor %}
                 </optgroup>
