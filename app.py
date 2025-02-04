@@ -1,28 +1,14 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
-from flask_apscheduler import APScheduler
 from utils.database import Database
 from AESalgorithm import Encryption, Decryption
 from utils.qr_code_maker import create_qr_code
 from functools import wraps
 import logging
 
-class Config:
-    SCHEDULER_API_ENABLED = True
-
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # Replace with a strong secret key
-app.config.from_object(Config())
-
 db = Database()
-scheduler = APScheduler()
-scheduler.init_app(app)
-scheduler.start()
-
-def clean_empty_groups():
-    db.delete_empty_groups()
-    logging.debug("Periodic cleanup: Empty groups deleted.")
-
-scheduler.add_job(id='CleanEmptyGroups', func=clean_empty_groups, trigger='interval', minutes=60)  # Adjust interval as needed
+logging.basicConfig(level=logging.DEBUG)
 
 def login_required(f):
     @wraps(f)
@@ -105,27 +91,36 @@ def create_group():
     flash(f'Group {group_name} created successfully.')
     return redirect(url_for('groups'))
 
+@app.route('/invite_to_group', methods=['POST'])
+@login_required
 def invite_to_group():
     group_name = request.form['group_name']
     username = request.form['username']
 
+    logging.debug(f"Inviting {username} to group {group_name} by {session['username']}")
+
     # Check if group exists and inviter is part of the group
     if not db.group_exists(group_name):
         flash(f"Group {group_name} does not exist.")
+        logging.error(f"Group {group_name} does not exist.")
         return redirect(url_for('groups'))
 
     if not db.is_user_in_group(session['username'], group_name):
         flash(f"You are not a member of the group {group_name}.")
+        logging.error(f"User {session['username']} is not a member of group {group_name}.")
         return redirect(url_for('groups'))
 
     if not db.user_exists(username):
         flash('Invalid username. Please try again.')
+        logging.error(f"User {username} does not exist.")
         return redirect(url_for('groups'))
 
     if db.invite_to_group(group_name, username):
         flash(f"Invitation sent to {username}.")
+        logging.info(f"Invitation sent to {username} for group {group_name}.")
     else:
         flash(f"User {username} is already in the group {group_name} or has a pending invitation.")
+        logging.error(f"User {username} is already in the group {group_name} or has a pending invitation.")
     return redirect(url_for('groups'))
 
 @app.route('/leave_group', methods=['POST'])

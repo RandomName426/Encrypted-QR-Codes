@@ -140,11 +140,12 @@ class Database:
             self.add_notification(username, f"You have been invited to join the group {group_name}", group_name)
         return True
 
-    def is_user_in_group(self, group_name, username):
+    def is_user_in_group(self, username, group_name):
         with self.conn:
             result = self.conn.execute('''
                 SELECT 1 FROM group_members WHERE group_name = ? AND username = ?
             ''', (group_name, username)).fetchone()
+            logging.debug(f"Checking if {username} is in group {group_name}: {'Yes' if result else 'No'}")
             return result is not None
 
     def leave_group(self, group_name, username):
@@ -200,6 +201,7 @@ class Database:
                 DELETE FROM group_members WHERE group_name = ? AND username = ?
             ''', (group_name, username))
             logging.debug(f"Invitation declined for user: {username} in group: {group_name}")
+
     def delete_empty_groups(self):
         with self.conn:
             # Find groups with no members
