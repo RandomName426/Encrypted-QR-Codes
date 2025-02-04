@@ -71,17 +71,31 @@ def generate():
 def scan():
     return render_template('scan.html', user=db.get_user_info(session['username']))
 
-@app.route('/account')
+@app.route('/account', methods=['GET'])
 @login_required
 def account():
-    username = session.get('username')
-    if username:
+    try:
+        username = session.get('username')
+        if not username:
+            flash('User not logged in', 'danger')
+            return redirect(url_for('login'))
+
         user_info = db.get_user_info(username)
+        if not user_info:
+            flash('User not found', 'danger')
+            return redirect(url_for('login'))
+
         groups = db.get_user_groups(username)
-        if user_info:
-            user = {'username': user_info[0], 'email': user_info[1], 'groups': groups}
-            return render_template('account.html', user=user)
-    return "User not found", 404
+        if groups is None:
+            groups = []
+
+        user = {'username': user_info[0], 'email': user_info[1], 'groups': groups}
+
+        return render_template('account.html', user=user)
+    except Exception as e:
+        logging.error(f"Error loading account page: {e}")
+        flash('An error occurred while loading your account information', 'danger')
+        return redirect(url_for('index'))
 
 @app.route('/create_group', methods=['POST'])
 @login_required

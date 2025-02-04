@@ -4,45 +4,45 @@ import pickle
 import logging
 
 class Database:
-    def __init__(self, db_path='app.db'):
-        self.conn = sqlite3.connect(db_path, check_same_thread=False)
+    def __init__(self):
+        self.conn = sqlite3.connect('database.db', check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
+        self.init_db()
 
-    def create_tables(self):
+    def init_db(self):
         with self.conn:
+            # Create users table
             self.conn.execute('''
-                CREATE TABLE IF NOT EXISTS users (
-                    username TEXT PRIMARY KEY,
-                    email TEXT,
-                    password TEXT,
-                    public_key BLOB,
-                    private_key BLOB
-                )
+            CREATE TABLE IF NOT EXISTS users (
+                username TEXT PRIMARY KEY,
+                email TEXT NOT NULL,
+                password TEXT NOT NULL,
+                public_key BLOB NOT NULL,
+                private_key BLOB NOT NULL
+            )
             ''')
+
+            # Create groups table
             self.conn.execute('''
-                CREATE TABLE IF NOT EXISTS groups (
-                    group_name TEXT PRIMARY KEY,
-                    leader TEXT,
-                    public_key BLOB,
-                    private_key BLOB
-                )
+            CREATE TABLE IF NOT EXISTS groups (
+                group_name TEXT PRIMARY KEY,
+                private_key BLOB NOT NULL
+            )
             ''')
+
+            # Create group_members table
             self.conn.execute('''
-                CREATE TABLE IF NOT EXISTS group_members (
-                    group_name TEXT,
-                    username TEXT,
-                    accepted INTEGER DEFAULT 0,
-                    PRIMARY KEY (group_name, username)
-                )
+            CREATE TABLE IF NOT EXISTS group_members (
+                username TEXT,
+                group_name TEXT,
+                FOREIGN KEY (username) REFERENCES users (username),
+                FOREIGN KEY (group_name) REFERENCES groups (group_name),
+                PRIMARY KEY (username, group_name)
+            )
             ''')
-            self.conn.execute('''
-                CREATE TABLE IF NOT EXISTS notifications (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    username TEXT,
-                    message TEXT,
-                    group_name TEXT
-                )
-            ''')
+
+            # Add premade accounts if the users table is empty
+            self.add_premade_accounts()
 
     def add_premade_accounts(self):
         accounts = [
