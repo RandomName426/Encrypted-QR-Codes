@@ -1,14 +1,29 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
+from flask_apscheduler import APScheduler
 from utils.database import Database
 from AESalgorithm import Encryption, Decryption
 from utils.qr_code_maker import create_qr_code
 from functools import wraps
 import logging
 
+class Config:
+    SCHEDULER_API_ENABLED = True
+
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # Replace with a strong secret key
+app.config.from_object(Config())
+
 db = Database()
-logging.basicConfig(level=logging.DEBUG)
+scheduler = APScheduler()
+scheduler.init_app(app)
+scheduler.start()
+
+def clean_empty_groups():
+    db.delete_empty_groups()
+    logging.debug("Periodic cleanup: Empty groups deleted.")
+
+scheduler.add_job(id='CleanEmptyGroups', func=clean_empty_groups, trigger='interval', minutes=60)  # Adjust interval as needed
+
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -83,22 +98,34 @@ def account():
 @login_required
 def create_group():
     group_name = request.form['group_name']
+    if db.group_exists(group_name):
+        flash(f'Group {group_name} already exists.')
+        return redirect(url_for('groups'))
     db.add_group(session['username'], group_name)
     flash(f'Group {group_name} created successfully.')
     return redirect(url_for('groups'))
 
-@app.route('/invite_to_group', methods=['POST'])
-@login_required
 def invite_to_group():
     group_name = request.form['group_name']
     username = request.form['username']
+
+    # Check if group exists and inviter is part of the group
+    if not db.group_exists(group_name):
+        flash(f"Group {group_name} does not exist.")
+        return redirect(url_for('groups'))
+
+    if not db.is_user_in_group(session['username'], group_name):
+        flash(f"You are not a member of the group {group_name}.")
+        return redirect(url_for('groups'))
+
     if not db.user_exists(username):
         flash('Invalid username. Please try again.')
         return redirect(url_for('groups'))
-    if not db.invite_to_group(group_name, username):
-        flash(f'User {username} is already in the group {group_name}.')
-        return redirect(url_for('groups'))
-    flash(f'Invitation sent to {username}.')
+
+    if db.invite_to_group(group_name, username):
+        flash(f"Invitation sent to {username}.")
+    else:
+        flash(f"User {username} is already in the group {group_name} or has a pending invitation.")
     return redirect(url_for('groups'))
 
 @app.route('/leave_group', methods=['POST'])
@@ -106,13 +133,16 @@ def invite_to_group():
 def leave_group():
     group_name = request.form['group_name']
     db.leave_group(group_name, session['username'])
+    db.delete_empty_groups()  # Clean up empty groups
     flash(f'You have left the group {group_name}.')
     return redirect(url_for('account'))
 
 @app.route('/groups')
 @login_required
 def groups():
-    return render_template('groups.html')
+    user_groups = db.get_user_groups(session['username'])
+    all_groups = db.get_all_groups()
+    return render_template('groups.html', user_groups=user_groups, all_groups=all_groups)
 
 @app.route('/notifications')
 @login_required
@@ -124,12 +154,13 @@ def notifications():
 @login_required
 def view_notification(notification_id):
     notification = db.get_notification_by_id(notification_id)
-    if notification.username == session['username']:
+    if notification['username'] == session['username']:
         db.delete_notification(notification_id)
         return render_template('notifications.html', selected_notification=notification, notifications=db.get_user_notifications(session['username']))
     return redirect(url_for('notifications'))
 
 @app.route('/accept_invitation/<int:notification_id>', methods=['POST'])
+@login_required
 def accept_invitation(notification_id):
     logging.debug(f"Received accept invitation request for notification ID: {notification_id}")
 
@@ -141,14 +172,13 @@ def accept_invitation(notification_id):
     group_name = notification['group_name']
     username = notification['username']
 
-    # Assuming you have a 'group_members' table with an 'accepted' column
-    db.conn.execute('''
-        UPDATE group_members SET accepted = 1 WHERE group_name = ? AND username = ?
-    ''', (group_name, username))
+    db.accept_invitation(group_name, username)
     db.delete_notification(notification_id)
-    return jsonify({"message": "Invitation accepted successfully"})
+    flash(f'Invitation to join {group_name} accepted.')
+    return redirect(url_for('notifications'))
 
 @app.route('/decline_invitation/<int:notification_id>', methods=['POST'])
+@login_required
 def decline_invitation(notification_id):
     logging.debug(f"Received decline invitation request for notification ID: {notification_id}")
 
@@ -160,14 +190,10 @@ def decline_invitation(notification_id):
     group_name = notification['group_name']
     username = notification['username']
 
-    # Assuming you have a 'group_members' table
-    db.conn.execute('''
-        DELETE FROM group_members WHERE group_name = ? AND username = ?
-    ''', (group_name, username))
+    db.decline_invitation(group_name, username)
     db.delete_notification(notification_id)
-    return jsonify({"message": "Invitation declined successfully"})
-
+    flash(f'Invitation to join {group_name} declined.')
+    return redirect(url_for('notifications'))
 
 if __name__ == '__main__':
     app.run(debug=True)
-

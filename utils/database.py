@@ -1,7 +1,6 @@
 import sqlite3
 import KeyGenerator
 import pickle
-from .notification import Notification
 import logging
 
 class Database:
@@ -32,6 +31,7 @@ class Database:
                 CREATE TABLE IF NOT EXISTS group_members (
                     group_name TEXT,
                     username TEXT,
+                    accepted INTEGER DEFAULT 0,
                     PRIMARY KEY (group_name, username)
                 )
             ''')
@@ -74,7 +74,7 @@ class Database:
                 SELECT username, email FROM users WHERE username = ?
             ''', (username,)).fetchone()
             return result
-        
+
     def get_public_key(self, username):
         with self.conn:
             public_key_serialized = self.conn.execute('''
@@ -106,25 +106,38 @@ class Database:
                 VALUES (?, ?, ?, ?)
             ''', (group_name, leader, public_key_serialized, private_key_serialized))
             self.conn.execute('''
-                INSERT INTO group_members (group_name, username)
-                VALUES (?, ?)
+                INSERT INTO group_members (group_name, username, accepted)
+                VALUES (?, ?, 1)
             ''', (group_name, leader))
+
+    def group_exists(self, group_name):
+        with self.conn:
+            result = self.conn.execute('''
+                SELECT 1 FROM groups WHERE group_name = ?
+            ''', (group_name,)).fetchone()
+            return result is not None
 
     def get_user_groups(self, username):
         with self.conn:
             return [row[0] for row in self.conn.execute('''
-                SELECT group_name FROM group_members WHERE username = ?
+                SELECT group_name FROM group_members WHERE username = ? AND accepted = 1
             ''', (username,)).fetchall()]
+
+    def get_all_groups(self):
+        with self.conn:
+            return [row['group_name'] for row in self.conn.execute('''
+                SELECT group_name FROM groups
+            ''').fetchall()]
 
     def invite_to_group(self, group_name, username):
         if self.is_user_in_group(group_name, username):
             return False
         with self.conn:
             self.conn.execute('''
-                INSERT INTO group_members (group_name, username)
-                VALUES (?, ?)
+                INSERT INTO group_members (group_name, username, accepted)
+                VALUES (?, ?, 0)
             ''', (group_name, username))
-            self.add_notification(username, f"You have been invited to join the group {group_name}")
+            self.add_notification(username, f"You have been invited to join the group {group_name}", group_name)
         return True
 
     def is_user_in_group(self, group_name, username):
@@ -155,11 +168,7 @@ class Database:
             result = self.conn.execute('''
                 SELECT * FROM notifications WHERE id = ?
             ''', (int(notification_id),)).fetchone()
-
-            if result:
-                return dict(result)
-            else:
-                return None
+            return dict(result) if result else None
 
     def delete_notification(self, notification_id):
         with self.conn:
@@ -191,16 +200,15 @@ class Database:
                 DELETE FROM group_members WHERE group_name = ? AND username = ?
             ''', (group_name, username))
             logging.debug(f"Invitation declined for user: {username} in group: {group_name}")
-
-    def debug_get_notification_by_id(self, notification_id):
+    def delete_empty_groups(self):
         with self.conn:
-            result = self.conn.execute('''
-                SELECT * FROM notifications WHERE id = ?
-            ''', (int(notification_id),)).fetchone()
+            # Find groups with no members
+            empty_groups = self.conn.execute('''
+                SELECT group_name FROM groups
+                WHERE group_name NOT IN (SELECT DISTINCT group_name FROM group_members)
+            ''').fetchall()
 
-            if result:
-                # Convert the sqlite3.Row object to a dictionary for better readability
-                notification = dict(result)
-                print(notification)
-            else:
-                print(f"No notification found with ID: {notification_id}")
+            # Delete empty groups
+            for group in empty_groups:
+                self.conn.execute('DELETE FROM groups WHERE group_name = ?', (group['group_name'],))
+                logging.debug(f"Deleted empty group: {group['group_name']}")
