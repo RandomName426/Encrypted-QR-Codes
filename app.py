@@ -47,10 +47,16 @@ def generate():
     if request.method == 'POST':
         recipient = request.form['recipient']
         data = request.form['data']
-        if not db.user_exists(recipient):
-            flash('Invalid username. Please try again.')
+        
+        # Check if the recipient is a user or a group
+        if db.user_exists(recipient):
+            public_key = db.get_public_key(recipient)
+        elif db.group_exists(recipient):
+            public_key = db.get_group_public_key(recipient)
+        else:
+            flash('Invalid recipient. Please enter a valid username or group name.')
             return redirect(url_for('generate'))
-        public_key = db.get_public_key(recipient)
+
         print(f"Public Key: {public_key}")
         encrypted_data = Encryption(data, public_key)
         qr_data = encrypted_data.hex()

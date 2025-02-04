@@ -154,6 +154,13 @@ class Database:
                 DELETE FROM group_members WHERE group_name = ? AND username = ?
             ''', (group_name, username))
 
+    def get_group_public_key(self, group_name):
+        with self.conn:
+            public_key_serialized = self.conn.execute('''
+                SELECT public_key FROM groups WHERE group_name = ?
+            ''', (group_name,)).fetchone()[0]
+            return pickle.loads(public_key_serialized)
+
     def add_notification(self, username, message, group_name=None):
         with self.conn:
             self.conn.execute('''
