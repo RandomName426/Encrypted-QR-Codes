@@ -5,7 +5,7 @@ import logging
 
 class Database:
     def __init__(self):
-        self.conn = sqlite3.connect('database.db', check_same_thread=False)
+        self.conn = sqlite3.connect('database.db', check_same_thread=False)  # Ensure this matches your database file name
         self.conn.row_factory = sqlite3.Row
         self.init_db()
 
@@ -30,14 +30,34 @@ class Database:
             )
             ''')
 
-            # Create group_members table
+            # Create group_members table with accepted column if not exists
             self.conn.execute('''
             CREATE TABLE IF NOT EXISTS group_members (
                 username TEXT,
                 group_name TEXT,
+                accepted INTEGER DEFAULT 0,
                 FOREIGN KEY (username) REFERENCES users (username),
                 FOREIGN KEY (group_name) REFERENCES groups (group_name),
                 PRIMARY KEY (username, group_name)
+            )
+            ''')
+
+            # Alter group_members table to add accepted column if it does not exist
+            try:
+                self.conn.execute('ALTER TABLE group_members ADD COLUMN accepted INTEGER DEFAULT 0')
+            except sqlite3.OperationalError as e:
+                if 'duplicate column name: accepted' in str(e):
+                    pass  # Column already exists
+                else:
+                    raise
+
+            # Create notifications table
+            self.conn.execute('''
+            CREATE TABLE IF NOT EXISTS notifications (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT,
+                message TEXT,
+                FOREIGN KEY (username) REFERENCES users (username)
             )
             ''')
 
@@ -61,19 +81,34 @@ class Database:
                         VALUES (?, ?, ?, ?, ?)
                     ''', (username, email, password, public_key_serialized, private_key_serialized))
 
+
+
+    def add_premade_accounts(self):
+        accounts = [
+            ("user1", "user1@example.com", "password1"),
+            ("user2", "user2@example.com", "password2"),
+            ("admin", "admin@example.com", "admin")
+        ]
+        for username, email, password in accounts:
+            if not self.user_exists(username):
+                public_key, private_key = KeyGenerator.generate_keys(username)
+                public_key_serialized = pickle.dumps(public_key)
+                private_key_serialized = pickle.dumps(private_key)
+                with self.conn:
+                    self.conn.execute('''
+                        INSERT INTO users (username, email, password, public_key, private_key)
+                        VALUES (?, ?, ?, ?, ?)
+                    ''', (username, email, password, public_key_serialized, private_key_serialized))
+
     def user_exists(self, username):
         with self.conn:
-            result = self.conn.execute('''
-                SELECT 1 FROM users WHERE username = ?
-            ''', (username,)).fetchone()
+            result = self.conn.execute('SELECT 1 FROM users WHERE username = ?', (username,)).fetchone()
             return result is not None
 
     def get_user_info(self, username):
         with self.conn:
-            user = self.conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
-            groups = self.conn.execute('SELECT group_name FROM group_members WHERE username = ?', (username,)).fetchall()
-            return {'username': user['username'], 'email': user['email'], 'groups': [g['group_name'] for g in groups]}
-
+            user = self.conn.execute('SELECT username, email FROM users WHERE username = ?', (username,)).fetchone()
+            return user if user else None
 
     def get_public_key(self, username):
         with self.conn:
@@ -89,9 +124,7 @@ class Database:
         
     def validate_user(self, username, password):
         with self.conn:
-            result = self.conn.execute('''
-                SELECT 1 FROM users WHERE username = ? AND password = ?
-            ''', (username, password)).fetchone()
+            result = self.conn.execute('SELECT * FROM users WHERE username = ? AND password = ?', (username, password)).fetchone()
             return result is not None
 
     def add_group(self, leader, group_name):
@@ -191,10 +224,8 @@ class Database:
 
     def get_user_notifications(self, username):
         with self.conn:
-            result = self.conn.execute('''
-                SELECT * FROM notifications WHERE username = ?
-            ''', (username,)).fetchall()
-            return [dict(row) for row in result]
+            result = self.conn.execute('SELECT message FROM notifications WHERE username = ?', (username,)).fetchall()
+            return [row['message'] for row in result]
 
     def accept_invitation(self, group_name, username):
         with self.conn:
