@@ -68,11 +68,7 @@ def generate():
 @app.route('/scan', methods=['GET', 'POST'])
 @login_required
 def scan():
-    if request.method == 'POST':
-        key_selection = request.form['key_selection']
-        # Implement logic for handling key selection here
-        # ...
-    return render_template('scan.html', user=session['username'], groups=db.get_user_groups(session['username']))
+    return render_template('scan.html', user=db.get_user_info(session['username']))
 
 @app.route('/account')
 @login_required
@@ -195,6 +191,27 @@ def decline_invitation(notification_id):
     db.delete_notification(notification_id)
     flash(f'Invitation to join {group_name} declined.')
     return redirect(url_for('notifications'))
+
+@app.route('/decode_qr', methods=['POST'])
+@login_required
+@login_required
+def decode_qr():
+    data = request.get_json()
+    qr_data = bytes(data['qrData'])
+    key_selection = data['key_selection']
+
+    # Determine if the key selection is a user or a group
+    if key_selection == session['username']:
+        private_key = db.get_private_key(session['username'])
+    elif db.group_exists(key_selection):
+        private_key = db.get_group_private_key(key_selection)
+    else:
+        return jsonify({'error': 'Invalid key selection'}), 400
+
+    decrypted_message = Decryption(qr_data, private_key)
+    decrypted_message = decrypted_message.decode('utf-8')
+    
+    return jsonify({'decryptedData': decrypted_message})
 
 if __name__ == '__main__':
     app.run(debug=True)

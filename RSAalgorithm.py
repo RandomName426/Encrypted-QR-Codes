@@ -76,9 +76,8 @@ def rsaDecryptWithIntegrity(encryptedData, privateKey):
 
         encryptedMessage = encryptedData[:(keySize*2)]
         encryptedPadding = encryptedData[(keySize*2):]
-        encryptedMessage = (encryptedMessage.decode('utf-8'))
-        decryptedMessage = rsaDecryption(int(encryptedMessage, 16), privateKey)
-        decryptedPadding = rsaDecryption(int(encryptedPadding, 16), privateKey)
+        decryptedMessage = rsaDecryption(int.from_bytes(encryptedMessage, "big"), privateKey)
+        decryptedPadding = rsaDecryption(int.from_bytes(encryptedPadding, "big" ), privateKey)
 
         messageBytes = decryptedMessage.to_bytes((decryptedMessage.bit_length() + 7) // 8, byteorder="big")
         paddingBytes = decryptedPadding.to_bytes(keySize, byteorder="big")

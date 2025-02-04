@@ -141,6 +141,6 @@ def Decryption(encrypted_data, privateKey):
 
     decrytedKey = RSA.main(encrypted_data[:2048], False, privateKey)
     encrypted_message = encrypted_data[2048:]
-    encrypted_message = bytes.fromhex(encrypted_message.decode('utf-8'))
+
     decrypted_message = decrypt_aes(encrypted_message, decrytedKey)
     return decrypted_message

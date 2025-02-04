@@ -2,21 +2,19 @@ document.getElementById('qr-form').addEventListener('submit', function(event) {
     event.preventDefault();
     const fileInput = document.getElementById('qr-file');
     const file = fileInput.files[0];
+    const keySelection = document.getElementById('key_selection').value;
+
     if (file) {
         const reader = new FileReader();
         reader.onload = function(e) {
-            console.log("FileReader onload triggered");  // Debug statement
             const image = new Image();
             image.onload = function() {
-                console.log("Image onload triggered");  // Debug statement
                 const canvas = document.createElement('canvas');
                 canvas.width = image.width;
                 canvas.height = image.height;
-                console.log(`Image dimensions: ${image.width}x${image.height}`);  // Log image dimensions
                 const context = canvas.getContext('2d');
                 context.drawImage(image, 0, 0);
                 const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-                console.log(`Image data: width=${imageData.width}, height=${imageData.height}`);  // Debug statement
 
                 const code = jsQR(imageData.data, canvas.width, canvas.height);
                 if (code) {
@@ -26,9 +24,12 @@ document.getElementById('qr-form').addEventListener('submit', function(event) {
                     fetch('/decode_qr', {
                         method: 'POST',
                         headers: {
-                            'Content-Type': 'application/octet-stream'
+                            'Content-Type': 'application/json'
                         },
-                        body: new Uint8Array(qrData)
+                        body: JSON.stringify({ 
+                            qrData: Array.from(qrData), 
+                            key_selection: keySelection 
+                        })
                     })
                     .then(response => response.json())
                     .then(data => {

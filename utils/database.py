@@ -70,10 +70,10 @@ class Database:
 
     def get_user_info(self, username):
         with self.conn:
-            result = self.conn.execute('''
-                SELECT username, email FROM users WHERE username = ?
-            ''', (username,)).fetchone()
-            return result
+            user = self.conn.execute('SELECT * FROM users WHERE username = ?', (username,)).fetchone()
+            groups = self.conn.execute('SELECT group_name FROM group_members WHERE username = ?', (username,)).fetchall()
+            return {'username': user['username'], 'email': user['email'], 'groups': [g['group_name'] for g in groups]}
+
 
     def get_public_key(self, username):
         with self.conn:
@@ -84,11 +84,9 @@ class Database:
 
     def get_private_key(self, username):
         with self.conn:
-            private_key_serialized = self.conn.execute('''
-                SELECT private_key FROM users WHERE username = ?
-            ''', (username,)).fetchone()[0]
+            private_key_serialized = self.conn.execute('SELECT private_key FROM users WHERE username = ?', (username,)).fetchone()[0]
             return pickle.loads(private_key_serialized)
-
+        
     def validate_user(self, username, password):
         with self.conn:
             result = self.conn.execute('''
@@ -112,9 +110,7 @@ class Database:
 
     def group_exists(self, group_name):
         with self.conn:
-            result = self.conn.execute('''
-                SELECT 1 FROM groups WHERE group_name = ?
-            ''', (group_name,)).fetchone()
+            result = self.conn.execute('SELECT 1 FROM groups WHERE group_name = ?', (group_name,)).fetchone()
             return result is not None
 
     def get_user_groups(self, username):
@@ -160,6 +156,11 @@ class Database:
                 SELECT public_key FROM groups WHERE group_name = ?
             ''', (group_name,)).fetchone()[0]
             return pickle.loads(public_key_serialized)
+
+    def get_group_private_key(self, group_name):
+        with self.conn:
+            private_key_serialized = self.conn.execute('SELECT private_key FROM groups WHERE group_name = ?', (group_name,)).fetchone()[0]
+            return pickle.loads(private_key_serialized)
 
     def add_notification(self, username, message, group_name=None):
         with self.conn:
