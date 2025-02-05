@@ -8,12 +8,10 @@
             <label for="key_selection">Select Key</label>
             <select class="form-control" id="key_selection" name="key_selection">
                 <optgroup label="Your Keys">
-                    <!-- Display username instead of actual key -->
                     <option value="{{ username }}">{{ username }}</option>
                 </optgroup>
                 <optgroup label="Group Keys">
                     {% for group in user_groups %}
-                    <!-- Display group name instead of actual key -->
                     <option value="{{ group }}">{{ group }}</option>
                     {% endfor %}
                 </optgroup>
@@ -25,6 +23,11 @@
         </div>
         <button type="submit" class="btn btn-primary">Decrypt</button>
     </form>
+    <div class="form-group">
+        <label for="qr-webcam">Or Scan using Webcam</label>
+        <button id="start-webcam" class="btn btn-secondary">Start Webcam</button>
+        <video id="webcam" width="320" height="240" style="display:none;"></video>
+    </div>
     <div id="qr-result"></div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
