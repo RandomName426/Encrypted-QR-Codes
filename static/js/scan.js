@@ -7,25 +7,19 @@ document.getElementById('qr-form').addEventListener('submit', function(event) {
     if (file) {
         const reader = new FileReader();
         reader.onload = function(e) {
-            console.log("FileReader onload triggered");  // Debug statement
             const image = new Image();
             image.onload = function() {
-                console.log("Image onload triggered");  // Debug statement
                 const canvas = document.createElement('canvas');
                 canvas.width = image.width;
                 canvas.height = image.height;
-                console.log(`Image dimensions: ${image.width}x${image.height}`);  // Log image dimensions
                 const context = canvas.getContext('2d');
                 context.drawImage(image, 0, 0);
                 const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-                console.log(`Image data: width=${imageData.width}, height=${imageData.height}`);  // Debug statement
 
                 const code = jsQR(imageData.data, canvas.width, canvas.height);
                 if (code) {
-                    const qrData = code.binaryData;  // Use binaryData to get raw bytes
-                    console.log("Extracted QR Data (raw bytes):", qrData);  // Debug statement
+                    const qrData = code.binaryData;
 
-                    // Construct form data to mimic form submission
                     const formData = new FormData();
                     formData.append('qr_code', new Blob([new Uint8Array(qrData)], { type: 'application/octet-stream' }));
                     formData.append('key_selection', keySelection);
@@ -62,12 +56,20 @@ document.getElementById('start-webcam').addEventListener('click', function() {
     const video = document.getElementById('webcam');
     video.style.display = 'block';
 
-    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    console.log('Requesting webcam access...');
+    navigator.mediaDevices.getUserMedia({ video: true })
         .then(function(stream) {
+            console.log('Webcam stream received');
             video.srcObject = stream;
-            video.setAttribute('playsinline', true);
-            video.play();
-            requestAnimationFrame(tick);
+            video.onloadedmetadata = function() {
+                video.play();
+                console.log('Webcam video playing');
+                requestAnimationFrame(tick);
+            };
+        })
+        .catch(function(err) {
+            console.error('Error accessing webcam: ', err);
+            document.getElementById('qr-result').textContent = `Error accessing webcam: ${err.name} - ${err.message}`;
         });
 
     function tick() {
@@ -80,10 +82,8 @@ document.getElementById('start-webcam').addEventListener('click', function() {
             const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
             const code = jsQR(imageData.data, canvas.width, canvas.height);
             if (code) {
-                const qrData = code.binaryData;  // Use binaryData to get raw bytes
-                console.log("Extracted QR Data (raw bytes):", qrData);  // Debug statement
+                const qrData = code.binaryData;
 
-                // Construct form data to mimic form submission
                 const formData = new FormData();
                 formData.append('qr_code', new Blob([new Uint8Array(qrData)], { type: 'application/octet-stream' }));
                 formData.append('key_selection', document.getElementById('key_selection').value);
@@ -99,14 +99,25 @@ document.getElementById('start-webcam').addEventListener('click', function() {
                     } else {
                         document.getElementById('qr-result').textContent = `Error: ${data.error}`;
                     }
+                    stopWebcam();
                 })
                 .catch(error => {
                     console.error('Error decoding QR code:', error);
                     document.getElementById('qr-result').textContent = 'Error decoding QR code.';
+                    stopWebcam();
                 });
                 return;
             }
         }
         requestAnimationFrame(tick);
+    }
+
+    function stopWebcam() {
+        const stream = video.srcObject;
+        const tracks = stream.getTracks();
+        tracks.forEach(function(track) {
+            track.stop();
+        });
+        video.style.display = 'none';
     }
 });
