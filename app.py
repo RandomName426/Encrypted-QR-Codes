@@ -6,6 +6,8 @@ from functools import wraps
 import pickle
 import zlib
 import logging
+import base64
+import io
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # Replace with a strong secret key
@@ -49,8 +51,7 @@ def generate():
     if request.method == 'POST':
         recipient = request.form['recipient']
         data = request.form['data']
-        
-        # Check if the recipient is a user or a group
+
         if db.user_exists(recipient):
             public_key = db.get_public_key(recipient)
         elif db.group_exists(recipient):
@@ -59,13 +60,21 @@ def generate():
             flash('Invalid recipient. Please enter a valid username or group name.')
             return redirect(url_for('generate'))
 
-        print(f"Public Key: {public_key}")
         encrypted_data = Encryption(data, public_key)
         qr_data = encrypted_data.hex()
-        create_qr_code(qr_data)
-        flash('QR Code generated and saved as qrcode.png')
-        return redirect(url_for('index'))
-    return render_template('generate.html')
+
+        # Generate the QR code
+        qr_image = create_qr_code(qr_data)
+
+        # Convert QR image to base64
+        img_io = io.BytesIO()
+        qr_image.save(img_io, format='PNG')
+        img_io.seek(0)
+        img_base64 = base64.b64encode(img_io.getvalue()).decode('utf-8')
+
+        return jsonify({"qr_code": img_base64})
+    
+    return render_template('generate.html')  # Ensures page loads on GET request
 
 @app.route('/scan', methods=['GET'])
 @login_required

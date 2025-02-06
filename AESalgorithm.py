@@ -1,12 +1,12 @@
 from secrets import randbelow
-import KeyExpansion as KE
+import KeyExpansion as KE   
 import RSAalgorithm as RSA
 
 def subBytes(sBox, message, encryption):
     if encryption:
-        subbedMessage = [sBox[byte] for byte in message]
+        subbedMessage = [sBox[byte] for byte in message] # Substituting each byte in the message with the corresponding byte in the sBox
     else:
-        subbedMessage = [sBox[byte] for byte in message]
+        subbedMessage = [sBox[byte] for byte in message] # Substituting each byte in the message with the corresponding byte in the inverse sBox
     return subbedMessage
 
 def chunking(message):
@@ -21,9 +21,9 @@ def addRoundKey(message, roundKey):
 def shiftRows(state, encryption):
     shifted = []
     if encryption:
-        shifted = [state[i] for i in (0, 5, 10, 15, 4, 9, 14, 3, 8, 13, 2, 7, 12, 1, 6, 11)]
+        shifted = [state[i] for i in (0, 5, 10, 15, 4, 9, 14, 3, 8, 13, 2, 7, 12, 1, 6, 11)] # Shifting the rows of the state with the given pattern for encryption
     else:
-        shifted = [state[i] for i in (0, 13, 10, 7, 4, 1, 14, 11, 8, 5, 2, 15, 12, 9, 6, 3)]
+        shifted = [state[i] for i in (0, 13, 10, 7, 4, 1, 14, 11, 8, 5, 2, 15, 12, 9, 6, 3)]  # Shifting the rows of the state with the given pattern for decryption
     return shifted
 
 def galois_multiplication(a, b):
@@ -44,42 +44,18 @@ def mixColumns(state, encryption):
         for col in range(4):
             start = col * 4
             a = state[start:start + 4]
-            newState[start + 0] = (galois_multiplication(2, a[0]) ^
-                                   galois_multiplication(3, a[1]) ^
-                                   a[2] ^
-                                   a[3])
-            newState[start + 1] = (a[0] ^
-                                   galois_multiplication(2, a[1]) ^
-                                   galois_multiplication(3, a[2]) ^
-                                   a[3])
-            newState[start + 2] = (a[0] ^
-                                   a[1] ^
-                                   galois_multiplication(2, a[2]) ^
-                                   galois_multiplication(3, a[3]))
-            newState[start + 3] = (galois_multiplication(3, a[0]) ^
-                                   a[1] ^
-                                   a[2] ^
-                                   galois_multiplication(2, a[3]))
+            newState[start + 0] = (galois_multiplication(2, a[0]) ^ galois_multiplication(3, a[1]) ^ a[2] ^ a[3])
+            newState[start + 1] = (a[0] ^ galois_multiplication(2, a[1]) ^ galois_multiplication(3, a[2]) ^ a[3])
+            newState[start + 2] = (a[0] ^ a[1] ^ galois_multiplication(2, a[2]) ^ galois_multiplication(3, a[3]))
+            newState[start + 3] = (galois_multiplication(3, a[0]) ^ a[1] ^ a[2] ^ galois_multiplication(2, a[3]))
     else:
         for col in range(4):
             start = col * 4
             a = state[start:start + 4]
-            newState[start + 0] = (galois_multiplication(0x0e, a[0]) ^
-                                   galois_multiplication(0x0b, a[1]) ^
-                                   galois_multiplication(0x0d, a[2]) ^
-                                   galois_multiplication(0x09, a[3]))
-            newState[start + 1] = (galois_multiplication(0x09, a[0]) ^
-                                   galois_multiplication(0x0e, a[1]) ^
-                                   galois_multiplication(0x0b, a[2]) ^
-                                   galois_multiplication(0x0d, a[3]))
-            newState[start + 2] = (galois_multiplication(0x0d, a[0]) ^
-                                   galois_multiplication(0x09, a[1]) ^
-                                   galois_multiplication(0x0e, a[2]) ^
-                                   galois_multiplication(0x0b, a[3]))
-            newState[start + 3] = (galois_multiplication(0x0b, a[0]) ^
-                                   galois_multiplication(0x0d, a[1]) ^
-                                   galois_multiplication(0x09, a[2]) ^
-                                   galois_multiplication(0x0e, a[3]))
+            newState[start + 0] = (galois_multiplication(0x0e, a[0]) ^ galois_multiplication(0x0b, a[1]) ^ galois_multiplication(0x0d, a[2]) ^ galois_multiplication(0x09, a[3]))
+            newState[start + 1] = (galois_multiplication(0x09, a[0]) ^ galois_multiplication(0x0e, a[1]) ^ galois_multiplication(0x0b, a[2]) ^ galois_multiplication(0x0d, a[3]))
+            newState[start + 2] = (galois_multiplication(0x0d, a[0]) ^ galois_multiplication(0x09, a[1]) ^ galois_multiplication(0x0e, a[2]) ^ galois_multiplication(0x0b, a[3]))
+            newState[start + 3] = (galois_multiplication(0x0b, a[0]) ^ galois_multiplication(0x0d, a[1]) ^ galois_multiplication(0x09, a[2]) ^ galois_multiplication(0x0e, a[3]))
     return newState
 
 def encrypt_aes(data, key):

@@ -15,4 +15,4 @@ def create_qr_code(data, filename="qrcode.png"):
     qr.make(fit=True)
     
     img = qr.make_image(fill='black', back_color='white')
-    img.save(filename)
+    return img

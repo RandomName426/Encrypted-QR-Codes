@@ -133,3 +133,21 @@ button:hover {
         width: 100%;
     }
 }
+.qr-container {
+    display: flex;
+    justify-content: center; /* Center the QR code horizontally */
+    align-items: center; /* Center it vertically */
+    margin-top: 1em;
+    padding: 1em;
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    text-align: center;
+    width: 100%; /* Make sure it takes up the full width of the container */
+}
+
+.qr-container img {
+    max-width: 95%; /* Makes sure it fits just short of the container size */
+    height: auto; /* Maintain aspect ratio */
+    object-fit: contain; /* Ensures it scales properly */
+}
