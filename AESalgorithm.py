@@ -65,7 +65,6 @@ def encrypt_aes(data, key):
     originalKey = key
     roundKeys, sBox = KE.main(True, originalKey)
     messageBytes = data.encode('utf-8')
-    print(f"Message bytes: {messageBytes}")
     paddingamount = 16 - (len(messageBytes)) % 16
     messageBytes += bytes([paddingamount] * paddingamount)
     chunks = chunking(messageBytes)
@@ -82,7 +81,6 @@ def encrypt_aes(data, key):
         state = addRoundKey(state, roundKeys[10])
         encrypted.append(state)
     encryptedHex = "".join("".join(f"{byte:02x}" for byte in block) for block in encrypted)
-    print(f"encryptedHex: {encryptedHex}")
     return originalKey, encryptedHex
 
 def decrypt_aes(message, key):
@@ -114,17 +112,11 @@ def decrypt_aes(message, key):
 def Encryption(message, pubKey):
     aes_key = randbelow(2**128 - 2**127) + 2**127
     originalKey, encrypted_message = encrypt_aes(message, aes_key)
-    print(f"encrypted_message: {encrypted_message}")
     encryptedKey = RSA.main(originalKey, True, pubKey)
-    print(f"encryptedKey: {encryptedKey}")
-    print(bytes.fromhex(encrypted_message))
-    print(f"encryptedMessage: {encryptedKey + bytes.fromhex(encrypted_message)}")
     return encryptedKey + bytes.fromhex(encrypted_message)
 
 def Decryption(encrypted_data, privateKey):
     decrytedKey = RSA.main(encrypted_data[:2048], False, privateKey)
-    print(f"decrytedKey: {decrytedKey}")
     encrypted_message = encrypted_data[2048:]
-    print(f"encrypted_message: {encrypted_message}")
     decrypted_message = decrypt_aes(encrypted_message, decrytedKey)
     return decrypted_message
