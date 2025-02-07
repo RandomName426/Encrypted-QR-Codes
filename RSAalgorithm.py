@@ -1,6 +1,7 @@
 import secrets
 from hashlib import sha256 as sha256_hash
 
+# Functions for the hashing of the message to check for message validation and making sure the data isn't tampered with
 def sha256(data):
     return sha256_hash(data).digest()
 
@@ -14,6 +15,7 @@ def mgf1(seed, mask_len):
     return mask[:mask_len]
 
 def oaepPadding(message, hashSize, keySize):
+    # Making the RSAOAEP padding 
     label_hash = sha256(b"")
     PS = b"\x00" * (keySize - len(message) - 2*hashSize - 2)
     DB = label_hash + PS + b"\x01" + message
@@ -25,6 +27,7 @@ def oaepPadding(message, hashSize, keySize):
     return b"\x00" + maskedSeed + maskedDB
 
 def oaepUnpadding(paddedMessage, hashSize, keySize):
+    # Unpadding the RSAOAEP encryption and validating the message 
     maskedSeed = paddedMessage[1:hashSize+1]
     maskedDB = paddedMessage[hashSize+1:]
 
@@ -47,26 +50,25 @@ def oaepUnpadding(paddedMessage, hashSize, keySize):
     return DB[i+1:]
 
 def rsaEncoding(messageInt, publicKey):
+    # The actual Encryption
     e, n = publicKey
     return pow(messageInt, e, n)
 
 def rsaDecryption(cipherInt, privateKey):
+    # The actual Decryption
     d, n = privateKey
     return pow(cipherInt, d, n)
 
 def rsaEncryptWithIntegrity(messageBytes, publicKey):
+    # Adding the RSA padding to the message
     keySize = (publicKey[1].bit_length() + 7) // 8
     hashSize = 32 
 
     try:
         integrityPadding = oaepPadding(messageBytes, hashSize, keySize)
         paddingInt = int.from_bytes(integrityPadding, byteorder="big")
-        print(f"Debug - Padding: {paddingInt}")
-        print(f"Debug - Message: {int.from_bytes(messageBytes, byteorder='big')}")
         encryptedPadding = rsaEncoding(paddingInt, publicKey)
         encryptedMessage = rsaEncoding(int.from_bytes(messageBytes, byteorder="big"), publicKey)
-        print(f"Debug - Encrypted message: {encryptedMessage}")
-        print(f"Debug - Encrypted padding: {encryptedPadding}")
         return encryptedMessage.to_bytes(keySize, byteorder="big") + encryptedPadding.to_bytes(keySize, byteorder="big")
     
     except Exception as e:
@@ -74,6 +76,7 @@ def rsaEncryptWithIntegrity(messageBytes, publicKey):
         return None
 
 def rsaDecryptWithIntegrity(encryptedData, privateKey):
+    # Getting rid of the hash and validating the messgae
     try:
         keySize = (privateKey[1].bit_length() + 7) // 8
         hashSize = 32
@@ -81,16 +84,9 @@ def rsaDecryptWithIntegrity(encryptedData, privateKey):
         encryptedMessage = encryptedData[:(keySize*2)]
         encryptedPadding = encryptedData[(keySize*2):]
         encryptedMessage = (encryptedMessage.decode('utf-8'))
-        print(f"Debug - Encrypted message: {encryptedMessage}")
-        print(f"Debug - Encrypted message: {int(encryptedMessage, 16)}")
-        print(f"Debug - Encrypted message: {int(encryptedPadding, 16)}")
-
         encryptedPadding = (encryptedPadding.decode('utf-8'))
-        print(f"Debug - Encrypted padding: {encryptedPadding}")
         decryptedMessage = rsaDecryption(int(encryptedMessage, 16), privateKey)
         decryptedPadding = rsaDecryption(int(encryptedPadding, 16), privateKey)
-        print(f"Debug - Decrypted message: {decryptedMessage}")
-        print(f"Debug - Decrypted padding: {decryptedPadding}")
         messageBytes = decryptedMessage.to_bytes((decryptedMessage.bit_length() + 7) // 8, byteorder="big")
         paddingBytes = decryptedPadding.to_bytes(keySize, byteorder="big")
 

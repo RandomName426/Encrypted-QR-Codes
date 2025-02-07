@@ -20,6 +20,7 @@ def create_rsa_keys(prime1, prime2):
     return public_key, private_key
 
 def modinv(a, m):
+    # Extended Euclidean Algorithm
     m0, x0, x1 = m, 0, 1
     if m == 1:
         return 0
@@ -32,9 +33,11 @@ def modinv(a, m):
     return x1
 
 def get_private_key(username):
+    # Storing the private keys of the user
     return key_store.get(username, {}).get('private_key')
 
 def get_public_key(username):
+    # Storing the public keys of the user
     return key_store.get(username, {}).get('public_key')
 
 

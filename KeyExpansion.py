@@ -42,15 +42,18 @@ sBox = [
 rCon = [0x00000000, 0x01000000, 0x02000000, 0x04000000, 0x08000000, 0x10000000, 0x20000000, 0x40000000, 0x80000000, 0x1B000000, 0x36000000]
 
 def rotate_word(word):
+    # Rotate the word 1 byte left
     return ((word << 8) & 0xFFFFFFFF) | (word >> 24)
 
 def sub_word(word):
+    # Substitute the Bytes for the corresponding byte in the S-box
     return ((sBox[(word >> 24) & 0xFF] << 24) |
             (sBox[(word >> 16) & 0xFF] << 16) |
             (sBox[(word >> 8) & 0xFF] << 8) |
             sBox[word & 0xFF])
 
 def key_expansion(byte_key):
+    # Expand the key to its 44 words
     Nk, Nr, Nb = 4, 10, 4
     expanded_key = [0] * (Nb * (Nr + 1))
     for i in range(Nk):
@@ -70,6 +73,7 @@ def key_expansion(byte_key):
     return expanded_key
 
 def round_keys(expanded_key):
+    # Collect each 4 words to make each round key
     keys_arr = []
     for i in range(11):
         round_key = []

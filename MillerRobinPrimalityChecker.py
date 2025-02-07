@@ -1,6 +1,7 @@
 from secrets import randbelow
 
 def trial_division(n):
+    # get rid of any obvious non - primes
     small_primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101,
                      103, 107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193, 197, 199]
     for prime in small_primes:
@@ -9,6 +10,7 @@ def trial_division(n):
     return True
 
 def MillerRobinPrimalityChecker(num):
+    # A form of Fermat's little theorem to test for primes. This is repeated 40 times to increase the chance of primes
     s, d = 0, num - 1
     while d % 2 == 1:
         d //= 2

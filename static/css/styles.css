@@ -110,44 +110,41 @@ button:hover {
     padding: 10px;
 }
 
+#webcam {
+    display: block; 
+    width: 80%; 
+    max-width: 500px; 
+    height: auto; 
+    margin: 1em auto; 
+    border-radius: 8px; 
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2); 
+}
+
+
 @media (max-width: 600px) {
-    .container {
-        margin: 1em;
-        padding: 1em;
-    }
-    
-    nav ul {
-        flex-direction: column;
-    }
-
-    nav ul li {
-        margin: 0.5em 0;
-    }
-
-    video {
-        width: 100%;
-        height: auto;
-    }
-
-    form {
-        width: 100%;
+    #webcam {
+        width: 100%; 
+        max-width: none; 
+        height: auto; 
     }
 }
+
 .qr-container {
     display: flex;
-    justify-content: center; /* Center the QR code horizontally */
-    align-items: center; /* Center it vertically */
+    justify-content: center; 
+    align-items: center; 
     margin-top: 1em;
     padding: 1em;
     background-color: #f9f9f9;
     border: 1px solid #ddd;
     border-radius: 4px;
-    text-align: center;
-    width: 100%; /* Make sure it takes up the full width of the container */
+    width: 80%; 
+    margin-left: auto;
+    margin-right: auto; 
 }
 
 .qr-container img {
-    max-width: 95%; /* Makes sure it fits just short of the container size */
-    height: auto; /* Maintain aspect ratio */
-    object-fit: contain; /* Ensures it scales properly */
+    max-width: 100%; 
+    height: auto; 
+    object-fit: contain;
 }

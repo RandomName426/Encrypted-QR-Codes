@@ -11,12 +11,12 @@ def subBytes(sBox, message, encryption):
 
 def chunking(message):
     chunks = []
-    for i in range(0, len(message), 16):
+    for i in range(0, len(message), 16): # Putting the bytes in the bytestring into an array of bytes
         chunks.append(message[i:i+16])
     return chunks
 
 def addRoundKey(message, roundKey):
-    return [message[i] ^ roundKey[i] for i in range(16)]
+    return [message[i] ^ roundKey[i] for i in range(16)] # Adding the round key to the current state of the plaintext
 
 def shiftRows(state, encryption):
     shifted = []
@@ -27,6 +27,7 @@ def shiftRows(state, encryption):
     return shifted
 
 def galois_multiplication(a, b):
+    # modular field arithmetic
     p = 0
     for i in range(8):
         if b & 1:
@@ -39,6 +40,7 @@ def galois_multiplication(a, b):
     return p & 0xFF
 
 def mixColumns(state, encryption):
+    # Matrix multiplication with modular field theory
     newState = [0] * 16
     if encryption:
         for col in range(4):
@@ -59,6 +61,7 @@ def mixColumns(state, encryption):
     return newState
 
 def encrypt_aes(data, key):
+    # Encryption steps of the data
     originalKey = key
     roundKeys, sBox = KE.main(True, originalKey)
     messageBytes = data.encode('utf-8')
@@ -83,6 +86,7 @@ def encrypt_aes(data, key):
     return originalKey, encryptedHex
 
 def decrypt_aes(message, key):
+    # Decyption steps of thr data
     originalKey = key
     roundKeys, sBox = KE.main(False, originalKey)
     roundKeys = roundKeys[::-1]
@@ -106,7 +110,7 @@ def decrypt_aes(message, key):
     decryptedData = decryptedData.decode('utf-8')
     return decryptedData
 
-# Functions to combine AES and RSA encryptions
+# Functions to combine AES and RSA encryptions (encrypting the Key of AES with RSA)
 def Encryption(message, pubKey):
     aes_key = randbelow(2**128 - 2**127) + 2**127
     originalKey, encrypted_message = encrypt_aes(message, aes_key)
@@ -118,7 +122,6 @@ def Encryption(message, pubKey):
     return encryptedKey + bytes.fromhex(encrypted_message)
 
 def Decryption(encrypted_data, privateKey):
-
     decrytedKey = RSA.main(encrypted_data[:2048], False, privateKey)
     print(f"decrytedKey: {decrytedKey}")
     encrypted_message = encrypted_data[2048:]

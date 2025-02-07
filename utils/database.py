@@ -4,6 +4,7 @@ import logging
 import KeyGenerator  # Assuming you have a KeyGenerator module
 
 class Database:
+    # Initiating the database
     def __init__(self, db_file='database.db'):
         self.conn = sqlite3.connect(db_file, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
@@ -58,12 +59,14 @@ class Database:
             # Add premade accounts if the users table is empty
             self.add_premade_accounts()
 
+    # Setting some premade accounts when there isn't a databse
     def add_premade_accounts(self):
         accounts = [
             ("user1", "user1@example.com", "password1"),
             ("user2", "user2@example.com", "password2"),
             ("admin", "admin@example.com", "admin")
         ]
+        # Making the key sets for the users 
         for username, email, password in accounts:
             if not self.user_exists(username):
                 public_key, private_key = KeyGenerator.generate_keys(username)
@@ -76,22 +79,26 @@ class Database:
                     ''', (username, email, password, public_key_serialized, private_key_serialized))
 
     def user_exists(self, username):
+        # Checking if the user requested is in the users' table
         with self.conn:
             result = self.conn.execute('SELECT 1 FROM users WHERE username = ?', (username,)).fetchone()
             return result is not None
 
     def group_exists(self, group_name):
+        # Checking if the group requested is in the groups' table
         with self.conn:
             result = self.conn.execute('SELECT 1 FROM groups WHERE group_name = ?', (group_name,)).fetchone()
             logging.debug(f"group_exists({group_name}): {result}")
             return result is not None
 
     def get_user_info(self, username):
+        # Getting the user's name and email from the users' table
         with self.conn:
             user = self.conn.execute('SELECT username, email FROM users WHERE username = ?', (username,)).fetchone()
             return user if user else None
 
     def get_public_key(self, username):
+        # Getting the requested user's public key from the database
         with self.conn:
             public_key_serialized = self.conn.execute('''
                 SELECT public_key FROM users WHERE username = ?
@@ -99,6 +106,7 @@ class Database:
             return pickle.loads(public_key_serialized)
 
     def get_private_key(self, username):
+        # Getting the requested user's private key from the database
         with self.conn:
             result = self.conn.execute('SELECT private_key FROM users WHERE username = ?', (username,)).fetchone()
             if result:
@@ -106,6 +114,7 @@ class Database:
             return None
         
     def get_group_public_key(self, group_name):
+        # Getting the requested group's public key from the database
         with self.conn:
             result = self.conn.execute('SELECT public_key FROM groups WHERE group_name = ?', (group_name,)).fetchone()
             if result:
@@ -193,6 +202,7 @@ class Database:
             ''', (group_name, username))
 
     def get_group_private_key(self, group_name):
+        # Getting the requested user's private key from the database
         with self.conn:
             result = self.conn.execute('SELECT private_key FROM groups WHERE group_name = ?', (group_name,)).fetchone()
             if result:
@@ -200,6 +210,7 @@ class Database:
             return None
 
     def add_notification(self, username, message, group_name=None):
+        # Add a record to the notification table for a givem username
         with self.conn:
             self.conn.execute('''
                 INSERT INTO notifications (username, message, group_name)
@@ -210,6 +221,7 @@ class Database:
             return last_id
 
     def get_notification_by_id(self, notification_id):
+        # Selection all the noifications for a specific ID
         with self.conn:
             result = self.conn.execute('''
                 SELECT * FROM notifications WHERE id = ?
@@ -217,21 +229,25 @@ class Database:
             return dict(result) if result else None
 
     def delete_notification(self, notification_id):
+        # Deleting the recrd of a given notification ID
         with self.conn:
             logging.debug(f"Deleting notification with id: {notification_id} (type: {type(notification_id)})")
             self.conn.execute('DELETE FROM notifications WHERE id = ?', (int(notification_id),))
 
     def get_all_notifications(self):
+        # Getting all the notifications
         with self.conn:
             result = self.conn.execute('SELECT * FROM notifications').fetchall()
             return [dict(row) for row in result]
 
     def get_user_notifications(self, username):
+        # Getting all the notification's for a given user
         with self.conn:
             result = self.conn.execute('SELECT * FROM notifications WHERE username = ?', (username,)).fetchall()
             return [dict(row) for row in result]
 
     def accept_invitation(self, group_name, username):
+        # Add the user to the Group
         with self.conn:
             self.conn.execute('''
                 UPDATE group_members SET accepted = 1 WHERE group_name = ? AND username = ?
@@ -239,6 +255,7 @@ class Database:
             logging.debug(f"Invitation accepted for user: {username} in group: {group_name}")
 
     def decline_invitation(self, group_name, username):
+        # Deleting the user from the group requested 
         with self.conn:
             self.conn.execute('''
                 DELETE FROM group_members WHERE group_name = ? AND username = ?
@@ -246,14 +263,13 @@ class Database:
             logging.debug(f"Invitation declined for user: {username} in group: {group_name}")
 
     def delete_empty_groups(self):
+        # Getting rid of any groups that have no users
         with self.conn:
-            # Find groups with no members
             empty_groups = self.conn.execute('''
                 SELECT group_name FROM groups
                 WHERE group_name NOT IN (SELECT DISTINCT group_name FROM group_members)
             ''').fetchall()
 
-            # Delete empty groups
             for group in empty_groups:
                 self.conn.execute('DELETE FROM groups WHERE group_name = ?', (group['group_name'],))
                 logging.debug(f"Deleted empty group: {group['group_name']}")

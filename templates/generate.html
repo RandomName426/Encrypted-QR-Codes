@@ -2,11 +2,14 @@
 
 {% block content %}
     <h2>Generate QR Code</h2>
+    <!-- Forms for the user to imput the data and recipient's username -->
     <form id="qrForm">
         <label for="recipient">Recipient Username:</label>
         <input type="text" id="recipient" name="recipient" required>
+        
         <label for="data">Data to Encrypt:</label>
         <input type="text" id="data" name="data" required>
+        
         <button type="submit">Generate</button>
     </form>
 
@@ -14,14 +17,16 @@
     <!-- QR Code Display Section -->
     <div id="qrCodeSection" style="display: none;">
         <h3>Your QR Code:</h3>
-        <img id="qrImage" src="" alt="Generated QR Code">
+        <div class="qr-container">
+            <img id="qrImage" src="" alt="Generated QR Code">
+        </div>
         <br>
         <a id="downloadLink" download="qrcode.png">Download QR Code</a>
     </div>
 
     <script>
         document.getElementById("qrForm").onsubmit = function(event) {
-            event.preventDefault();
+            event.preventDefault();  
 
             let formData = new FormData(event.target);
 
@@ -38,8 +43,16 @@
                     let downloadLink = document.getElementById("downloadLink");
                     downloadLink.href = qrImage.src;
 
-                    document.getElementById("qrCodeSection").style.display = "block";
+                    document.getElementById("qrCodeSection").style.display = "block"; 
+                } else if (data.flash) {
+                    if (data.error) {
+                        showPopup(data.error); 
+                    }
                 }
+            })
+            .catch(error => {
+                console.error("Error during request:", error);
+                showPopup("An error occurred while generating the QR code.");
             });
         };
     </script>
