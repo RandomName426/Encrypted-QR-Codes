@@ -4,8 +4,8 @@ import MillerRabinPrimalityChecker
 key_store = {}
 
 def generate_keys(username):
-    prime1 = MillerRobinPrimalityChecker.generate_prime()
-    prime2 = MillerRobinPrimalityChecker.generate_prime()
+    prime1 = MillerRabinPrimalityChecker.generate_prime()
+    prime2 = MillerRabinPrimalityChecker.generate_prime()
     public_key, private_key = create_rsa_keys(prime1, prime2)
     key_store[username] = {'public_key': public_key, 'private_key': private_key}
     return public_key, private_key
