@@ -1,4 +1,4 @@
-import MillerRobinPrimalityChecker
+import MillerRabinPrimalityChecker
 
 # Dictionary to store keys
 key_store = {}
